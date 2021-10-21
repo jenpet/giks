@@ -8,6 +8,21 @@ import (
 	"sync"
 )
 
+var validHooks = []string{
+	"applypatch-msg",
+	"commit-msg",
+	"fsmonitor-watchman",
+	"post-update",
+	"pre-applypatch",
+	"pre-commit",
+	"pre-merge-commit",
+	"pre-push",
+	"pre-rebase",
+	"pre-receive",
+	"prepare-commit-msg",
+	"update",
+}
+
 func GetConfig() (Config, error) {
 	var cfg Config
 	var err error
@@ -70,6 +85,15 @@ type Hook struct {
 }
 
 func (h Hook) validate() error {
+	valid := false
+	for _, hook := range validHooks {
+		if hook == h.Name {
+			valid = true
+		}
+	}
+	if !valid {
+		return fmt.Errorf("hook '%s' is not a valid Git hook", h.Name)
+	}
 	if h.Enabled && len(h.Steps) <= 0 {
 		return errors.New("hook enabled but validate steps are missing")
 	}

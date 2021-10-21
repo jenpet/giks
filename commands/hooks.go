@@ -108,7 +108,7 @@ func executeStep(hook string, s config.Step, args []string) error {
 		return executeScript(hook, s.Script, args, nil)
 	}
 	if err := s.Plugin.Validate(); err == nil {
-		return executePlugin(hook, s.Plugin)
+		return executePlugin(hook, s.Plugin, args)
 	}
 	return errors.New("step seems to be invalid")
 }
@@ -135,9 +135,9 @@ func executeScript(hook string, path string, args []string, envs map[string]stri
 	return cmd.Run()
 }
 
-func executePlugin(hook string, plugin config.PluginStep) error {
+func executePlugin(hook string, plugin config.PluginStep, args []string) error {
 	pluginPath := fmt.Sprintf("./%s/%s.sh", pluginDirectory, plugin.Name)
-	err := executeScript(hook, pluginPath, nil, plugin.Args)
+	err := executeScript(hook, pluginPath, args, plugin.Args)
 	if err != nil && os.IsNotExist(err) {
 		return fmt.Errorf("the given plugin '%s' does not exist", plugin.Name)
 	}
