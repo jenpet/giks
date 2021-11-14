@@ -1,29 +1,22 @@
 package main
 
 import (
+	"context"
 	"flag"
-	"fmt"
+	"giks/args"
 	"giks/commands"
 	"giks/config"
 	"os"
 )
 
 func main() {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		fmt.Printf("Failed parsing giks configuration. Error: %s", err)
-		return
-	}
+	var ga args.GiksArgs = os.Args
 
-	if len(os.Args) < 2 {
-		fmt.Printf("help text")
-		os.Exit(1)
-	}
+	ctx := config.ContextWithConfig(context.Background())
 
-	// subcommands
-	switch os.Args[1] {
+	switch ga.Command() {
 	case "hooks":
-		commands.ProcessHooks(os.Args[2:], cfg)
+		commands.ProcessHooks(ctx, ga)
 	default:
 		flag.PrintDefaults()
 		os.Exit(1)

@@ -1,11 +1,20 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
+	"os"
 	"sync"
+)
+
+type ctxKey int
+
+const (
+	ctxHookKey ctxKey = iota
+	ctxConfigKey
 )
 
 var validHooks = []string{
@@ -23,7 +32,7 @@ var validHooks = []string{
 	"update",
 }
 
-func GetConfig() (Config, error) {
+func GetConfig() Config {
 	var cfg Config
 	var err error
 	var once sync.Once
@@ -42,7 +51,11 @@ func GetConfig() (Config, error) {
 			cfg.Hooks[name]= hook
 		}
 	})
-	return cfg, err
+	if err != nil {
+		fmt.Printf("Failed parsing giks configuration. Error: %s", err)
+		os.Exit(1)
+	}
+	return cfg
 }
 
 type Config struct {
@@ -112,6 +125,54 @@ func (h Hook) ToMap() map[string]interface{} {
 	return m
 }
 
+// ContextWithHook adds the targeted hook into the context to provide easy access later on
+func ContextWithHook(ctx context.Context, args []string) context.Context {
+	if len(args) < 1 {
+		fmt.Println("hook name is required but missing")
+		os.Exit(1)
+	}
+	cfg := GetConfig()
+	hook, err := cfg.Hook(args[0])
+	if err != nil {
+		fmt.Printf("failed retrieving '%s' hook. Error: %s\n", args[0], err)
+		os.Exit(1)
+	}
+	return context.WithValue(ctx, ctxHookKey, *hook)
+}
+
+func HookFromContext(ctx context.Context) Hook {
+	if ctx == nil {
+		fmt.Println("could not retrieve hook from context context was nil.")
+		os.Exit(1)
+	}
+	if h, ok := ctx.Value(ctxHookKey).(Hook); ok {
+		return h
+	}
+	fmt.Println("could not retrieve hook from context")
+	os.Exit(1)
+	return Hook{}
+}
+
+// ContextWithConfig adds the configuration to the context to provide easy access later on
+func ContextWithConfig(ctx context.Context) context.Context {
+	cfg := GetConfig()
+	return context.WithValue(ctx, ctxConfigKey, cfg)
+}
+
+// ConfigFromContext returns the configuration from a given context
+func ConfigFromContext(ctx context.Context) Config {
+	if ctx == nil {
+		fmt.Println("could not retrieve config from context context was nil.")
+		os.Exit(1)
+	}
+	if cfg, ok := ctx.Value(ctxConfigKey).(Config); ok {
+		return cfg
+	}
+	fmt.Println("could not retrieve config from context")
+	os.Exit(1)
+	return Config{}
+}
+
 type Step struct {
 	Command string `yaml:"command"`
 	Exec string `yaml:"exec"`
@@ -134,13 +195,13 @@ func (s Step) ToMap() map[string]interface{} {
 	}
 
 	if s.Plugin.Validate() == nil {
-		args := map[string]string{}
-		for k,v := range s.Plugin.Args {
-			args[k]=v
+		vars := map[string]string{}
+		for k,v := range s.Plugin.Vars {
+			vars[k]=v
 		}
 		info := map[string]interface{}{}
 		info["name"] = s.Plugin.Name
-		info["args"] = args
+		info["vars"] = vars
 		m["plugin"] = info
 	}
 	return m
@@ -172,7 +233,7 @@ func (s Step) validate() error {
 
 type PluginStep struct {
 	Name string `yaml:"name"`
-	Args map[string]string `yaml:"args"`
+	Vars map[string]string `yaml:"vars"`
 }
 
 func (ps PluginStep) Validate() error {

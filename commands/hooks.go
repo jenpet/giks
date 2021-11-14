@@ -1,12 +1,16 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
+	gargs "giks/args"
 	"giks/config"
+	"github.com/mattn/go-shellwords"
 	"os"
 	"os/exec"
+	"syscall"
 	"text/template"
 )
 
@@ -31,7 +35,7 @@ STEPS: {{ len .steps }}
   {{- else if $step.exec }}{{ $idx }}.)	exec: '{{ $step.exec }}'
   {{- else if $step.script }}{{ $idx }}.)	script: '{{ $step.script }}'
   {{- else if $step.plugin }}{{ $idx }}.)	plugin: '{{ $step.plugin.name }}'
-  	{{ if $step.plugin.args }}args:
+  	{{ if $step.plugin.args }}vars:
     	{{- range $key, $value := $step.plugin.args }}
 	  - {{ $key }} = {{ $value }}
     	{{- end }}
@@ -54,62 +58,67 @@ func init() {
 	}
 }
 
-func ProcessHooks(args []string, cfg config.Config) {
-	switch args[0] {
-		case "list":
+func ProcessHooks(ctx context.Context, gargs gargs.GiksArgs) {
+	args := gargs.Args()
+	switch gargs.SubCommand() {
+	case "list":
 			_ = listCommand.Parse(args[1:])
 			if listCommand.Parsed() {
 				all := *listAllAttr
+				cfg := config.ConfigFromContext(ctx)
 				printTemplate(listTemplate, cfg.HookList(all))
 			}
-		case "show":
-			if len(args[1:]) < 1 {
-				fmt.Println("missing hook name")
-				os.Exit(1)
-			}
-			hook, err := cfg.Hook(args[1])
-			if err != nil {
-				fmt.Printf("failed retrieving '%s' hook. Error: %s\n", args[1], err)
-				os.Exit(1)
-			}
-
-			printTemplate(detailsTemplate, hook.ToMap())
+	case "show":
+			ctx = config.ContextWithHook(ctx, args)
+			printTemplate(detailsTemplate, config.HookFromContext(ctx).ToMap())
 	case "exec":
-		if len(args[1:]) < 1 {
-			fmt.Println("missing hook name")
+		if len(args) < 1 {
+			fmt.Printf("missing hook to execute")
 			os.Exit(1)
 		}
-		hook, err := cfg.Hook(args[1])
-		if err != nil {
-			fmt.Printf("failed retrieving '%s' hook. Error: %s\n", args[1], err)
+		ctx = config.ContextWithHook(ctx, args)
+		if err := executeHook(ctx, args[1:]); err != nil {
+			fmt.Printf("failed executing '%s' hook. Error: %s\n", args[0], err)
 			os.Exit(1)
 		}
-		if err := executeHook(*hook, args[2:]); err != nil {
-			fmt.Printf("failed executing '%s' hook. Error: %s\n", args[1], err)
-			os.Exit(1)
-		}
+	case "help":
+		fmt.Println("help text")
+	default:
+		fmt.Printf("Unknown subcommand '%s'", gargs.SubCommand())
 	}
 }
 
-func executeHook(h config.Hook, args []string) error {
+func executeHook(ctx context.Context, args []string) error {
+	h := config.HookFromContext(ctx)
 	if !h.Enabled {
 		return fmt.Errorf("hook '%s' is not enabled", h.Name)
 	}
 	for i, step := range h.Steps {
-		if err := executeStep(h.Name, step, args); err != nil {
+		if err := executeStep(ctx, step, args); err != nil {
 			return fmt.Errorf("failed executing step no. %d. Error: %s", i+1, err)
 		}
 	}
 	return nil
 }
 
-func executeStep(hook string, s config.Step, args []string) error {
+func executeStep(ctx context.Context, s config.Step, args []string) error {
+	h := config.HookFromContext(ctx)
 	if s.Script != "" {
-		return executeScript(hook, s.Script, args, nil)
+		return executeScript(h.Name, s.Script, args, nil)
 	}
+
+	if s.Command != "" {
+		return executeCommand(h.Name, s.Command, args)
+	}
+
+	if s.Exec != "" {
+		return runExec(h.Name, s.Exec, args)
+	}
+
 	if err := s.Plugin.Validate(); err == nil {
-		return executePlugin(hook, s.Plugin, args)
+		return executePlugin(h.Name, s.Plugin, args)
 	}
+
 	return errors.New("step seems to be invalid")
 }
 
@@ -137,11 +146,38 @@ func executeScript(hook string, path string, args []string, envs map[string]stri
 
 func executePlugin(hook string, plugin config.PluginStep, args []string) error {
 	pluginPath := fmt.Sprintf("./%s/%s.sh", pluginDirectory, plugin.Name)
-	err := executeScript(hook, pluginPath, args, plugin.Args)
+	err := executeScript(hook, pluginPath, args, plugin.Vars)
 	if err != nil && os.IsNotExist(err) {
 		return fmt.Errorf("the given plugin '%s' does not exist", plugin.Name)
 	}
 	return err
+}
+
+func executeCommand(hook string, command string, args []string) error {
+	args = append([]string{"-c", command}, args...)
+	cmd := exec.Command("sh", args...)
+	cmd.Env = append(cmd.Env, fmt.Sprintf("GIKS_HOOK_TYPE=%s", hook))
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func runExec(hook string, line string, args []string) error {
+	parts, err := shellwords.Parse(line)
+	if err != nil {
+		return fmt.Errorf("could not parse exec '%s'", line)
+	}
+
+	bin := parts[0]
+	path, err := exec.LookPath(bin)
+	if err != nil {
+		return fmt.Errorf("binary not found for exec '%s'", line)
+	}
+	env := os.Environ()
+	env = append(env, fmt.Sprintf("GIKS_HOOK_TYPE=%s", hook))
+	args = append(parts, args...)
+	return syscall.Exec(path, args, env)
 }
 
 func envsToList(envs map[string]string) []string {
