@@ -1,4 +1,4 @@
-package commands
+package hooks
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	gargs "giks/args"
+	"giks/commands"
 	"giks/config"
 	"github.com/mattn/go-shellwords"
 	"os"
@@ -59,18 +60,20 @@ func init() {
 }
 
 func ProcessHooks(ctx context.Context, gargs gargs.GiksArgs) {
+	// actual array of arguments without the binary itself the command and subcommand
 	args := gargs.Args()
+	// retrieve provided config from context
+	cfg := config.ConfigFromContext(ctx)
 	switch gargs.SubCommand() {
 	case "list":
-			_ = listCommand.Parse(args[1:])
-			if listCommand.Parsed() {
-				all := *listAllAttr
-				cfg := config.ConfigFromContext(ctx)
-				printTemplate(listTemplate, cfg.HookList(all))
-			}
+		_ = listCommand.Parse(args)
+		if listCommand.Parsed() {
+			all := *listAllAttr
+			commands.PrintTemplate(listTemplate, cfg.HookList(all))
+		}
 	case "show":
-			ctx = config.ContextWithHook(ctx, args)
-			printTemplate(detailsTemplate, config.HookFromContext(ctx).ToMap())
+		ctx = config.ContextWithHook(ctx, args)
+		commands.PrintTemplate(detailsTemplate, config.HookFromContext(ctx).ToMap())
 	case "exec":
 		if len(args) < 1 {
 			fmt.Printf("missing hook to execute")
@@ -81,6 +84,8 @@ func ProcessHooks(ctx context.Context, gargs gargs.GiksArgs) {
 			fmt.Printf("failed executing '%s' hook. Error: %s\n", args[0], err)
 			os.Exit(1)
 		}
+	case "install":
+
 	case "help":
 		fmt.Println("help text")
 	default:

@@ -6,10 +6,6 @@ build:
       -o {{ .robo.path }}/{{ .binary }} . && \
     chmod a+rwx {{ .binary }}
 
-run:
-  summary: runs giks
-  exec: {{ .binary }}
-
 variables:
   binary: build/dist/giks
   rcmd: robo -c {{ .robo.file }}

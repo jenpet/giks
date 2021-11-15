@@ -1,25 +1,71 @@
 package args
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
+
+const (
+	keyGlobalConfigFlag = "--config"
+	keyGlobalGitDirFlag = "--git-dir"
+)
+
+var globalFlags = []string{keyGlobalGitDirFlag, keyGlobalConfigFlag}
 
 type GiksArgs []string
 
 func (ga GiksArgs) Command() string {
-	if len(ga) < 2 || isFlag(ga[1]) {
+	if len(ga.sanitizeArgs()) < 2 || isFlag(ga.sanitizeArgs()[1]) {
 		return "help"
 	}
-	return ga[1]
+	return ga.sanitizeArgs()[1]
 }
 
 func (ga GiksArgs) SubCommand() string {
-	if len(ga) < 3 || isFlag(ga[2]) {
+	if len(ga.sanitizeArgs()) < 3 || isFlag(ga.sanitizeArgs()[2]) {
 		return "help"
 	}
-	return ga[2]
+	return ga.sanitizeArgs()[2]
+}
+
+func (ga GiksArgs) ConfigFile() string {
+	return ga.getGlobalFlag(keyGlobalConfigFlag)
+}
+
+func (ga GiksArgs) GitDir() string {
+	return ga.getGlobalFlag(keyGlobalGitDirFlag)
+}
+
+func (ga GiksArgs) getGlobalFlag(flag string) string {
+	for _, arg := range ga {
+		if fileArg := strings.Split(arg, fmt.Sprintf("%s=", flag)); len(fileArg) == 2 {
+			return fileArg[1]
+		}
+	}
+	return ""
 }
 
 func (ga GiksArgs) Args() []string {
-	return ga[3:]
+	args := ga.sanitizeArgs()
+	if len(args) < 4 {
+		return []string{}
+	}
+	return args[3:]
+}
+
+// sanitizeArgs removes all arguments relevant for a global configuration
+func (ga GiksArgs) sanitizeArgs() []string {
+	var sanatized []string
+	OUTER:
+	for _, arg := range ga {
+		for _, flag := range globalFlags {
+			if strings.HasPrefix(arg, flag) {
+				continue OUTER
+			}
+		}
+		sanatized = append(sanatized, arg)
+	}
+	return sanatized
 }
 
 func (ga GiksArgs) Raw() []string {
