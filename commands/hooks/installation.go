@@ -149,7 +149,7 @@ func hookFileContent(cfg config.Config, hookName string) string {
 }
 
 func commandString(cfg config.Config, hookName string) (string, error) {
-	cmd := fmt.Sprintf("giks hooks exec %s --config=%s", hookName, cfg.ConfigFile)
+	cmd := fmt.Sprintf("%s hooks exec %s --config=%s", cfg.Binary, hookName, cfg.ConfigFile)
 	switch hookName {
 	case git.HookCommitMsg:
 		return fmt.Sprintf("%s ${1}", cmd), nil

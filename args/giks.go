@@ -15,6 +15,10 @@ var globalFlags = []string{keyGlobalGitDirFlag, keyGlobalConfigFlag}
 
 type GiksArgs []string
 
+func (ga GiksArgs) Binary() string {
+	return ga[0]
+}
+
 func (ga GiksArgs) Command() string {
 	if len(ga.sanitizeArgs()) < 2 || isFlag(ga.sanitizeArgs()[1]) {
 		return "help"

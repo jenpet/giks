@@ -11,6 +11,7 @@ type Config struct {
 	Hooks map[string]Hook `yaml:"hooks"`
 	ConfigFile string `yaml:"-"`
 	GitDir string `yaml:"-"`
+	Binary string `yaml:"-"`
 }
 
 func (c Config) HookList(all bool) map[string]Hook {

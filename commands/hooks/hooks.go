@@ -1,7 +1,6 @@
 package hooks
 
 import (
-	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -59,11 +58,9 @@ func init() {
 	}
 }
 
-func ProcessHooks(ctx context.Context, gargs gargs.GiksArgs) {
+func ProcessHooks(cfg config.Config, gargs gargs.GiksArgs) {
 	// actual array of arguments without the binary itself the command and subcommand
 	args := gargs.Args()
-	// retrieve provided config from context
-	cfg := config.ConfigFromContext(ctx)
 	switch gargs.SubCommand() {
 	case "list":
 		_ = listCommand.Parse(args)

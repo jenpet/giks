@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"giks/args"
 	"giks/commands/hooks"
@@ -12,17 +11,13 @@ import (
 func main() {
 	// parse into specific giks arguments to ease command, subcommand and argument handling
 	var ga args.GiksArgs = os.Args
-
-	// enrich the context with the given config
-	ctx := config.ContextWithConfig(context.Background(), ga.ConfigFile(), ga.GitDir())
-
+	cfg := config.AssembleConfig(ga)
 	switch ga.Command() {
 	case "hooks":
-		hooks.ProcessHooks(ctx, ga)
+		hooks.ProcessHooks(cfg, ga)
 	case "help":
-		cfg := config.ConfigFromContext(ctx)
 		fmt.Println("Help text")
-		fmt.Printf("giks config: '%s' git directory: '%s'", cfg.ConfigFile, cfg.GitDir)
+		fmt.Printf("giks binary: '%s', giks config: '%s', git directory: '%s'", cfg.Binary, cfg.ConfigFile, cfg.GitDir)
 	default:
 		fmt.Println("unknown command")
 		os.Exit(1)

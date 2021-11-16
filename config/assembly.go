@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"giks/args"
+	"giks/log"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"os"
@@ -12,13 +14,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-)
-
-type ctxKey int
-
-const (
-	ctxHookKey ctxKey = iota
-	ctxConfigKey
 )
 
 // default filename for giks configs in case none is provided on invocation
@@ -52,10 +47,34 @@ func parseConfig(file string) Config {
 	return cfg
 }
 
-func assembleConfig(file string, gitDir string) Config {
-	cfg := parseConfig(file)
-	cfg.GitDir = validateGitDirectory(gitDir)
+func AssembleConfig(ga args.GiksArgs) Config {
+	cfg := parseConfig(ga.ConfigFile())
+	cfg.GitDir = validateGitDirectory(ga.GitDir())
+	cfg.Binary = validateBinaryDirectory(ga.Binary())
 	return cfg
+}
+
+func validateBinaryDirectory(binary string) string {
+	// check if the used binary file exists and might be relative or absolute
+	if fi, _ := os.Stat(binary); fi != nil {
+		// binary is already an absolute path
+		if filepath.IsAbs(binary) {
+			return binary
+		}
+		// get the absolute path to the binary
+		path, err := filepath.Abs(binary)
+		if err != nil {
+			log.Errorf("Could not get absolute path to giks binary. Error: %+v", err)
+		}
+		return path
+	}
+
+	// binary is presumably in the $PATH env var
+	path, err := exec.LookPath(binary)
+	if err != nil {
+		log.Errorf("Could not get absolute path to giks binary. Error: %+v", err)
+	}
+	return path
 }
 
 // TODO: not really validate, rather a check for fallback
