@@ -1,13 +1,16 @@
 package config
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -20,21 +23,6 @@ const (
 
 // default filename for giks configs in case none is provided on invocation
 const defaultGiksConfigFilename = "giks.yml"
-
-var validHooks = []string{
-	"applypatch-msg",
-	"commit-msg",
-	"fsmonitor-watchman",
-	"post-update",
-	"pre-applypatch",
-	"pre-commit",
-	"pre-merge-commit",
-	"pre-push",
-	"pre-rebase",
-	"pre-receive",
-	"prepare-commit-msg",
-	"update",
-}
 
 func parseConfig(file string) Config {
 	var cfg Config
@@ -104,15 +92,39 @@ func validateGitDirectory(dir string) string {
 		}
 		dir = absoluteFilepath(path)
 	}
-	// check git availability
-	if err := exec.Command("git", "-C", dir, "rev-parse").Run(); err != nil {
+
+	// check git availability and get the git directory by executing
+	// git -C <git-dir> rev-parse --git-dir
+	cmd := exec.Command("git", "-C", dir, "rev-parse", "--git-dir")
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	if err := cmd.Run(); err != nil {
 		fmt.Printf("Failed validating git directory '%s'. Error: %+v", dir, err)
 		os.Exit(1)
+	}
+
+	// if the output of the git command is not an absolute directory it is a child of the given dir
+	gitDir := strings.TrimSpace(buf.String())
+	if !filepath.IsAbs(gitDir) {
+		dir = filepath.Join(dir, gitDir)
+	} else {
+		dir = gitDir
 	}
 	return dir
 }
 
 func absoluteFilepath(file string) string {
+	if filepath.IsAbs(file) {
+		return file
+	}
+	if strings.HasPrefix(file, "~" ) {
+		u, err := user.Current()
+		if err != nil {
+			fmt.Printf("Could not retrieve user home directory due to usage of '%s'. Error: %+v", file, err)
+			os.Exit(1)
+		}
+		file = strings.Replace(file, "~", u.HomeDir, 1)
+	}
 	file, err := filepath.Abs(file)
 	if err != nil {
 		fmt.Printf("Could not get absolute filepath for file '%s'. Error: %+v", file, err)

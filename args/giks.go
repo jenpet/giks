@@ -1,3 +1,4 @@
+// Package args TODO: Document assumptions about the command, subcommand, hock and flag structure including global flags
 package args
 
 import (
@@ -28,6 +29,17 @@ func (ga GiksArgs) SubCommand() string {
 	return ga.sanitizeArgs()[2]
 }
 
+func (ga GiksArgs) Hook() string {
+	if len(ga.sanitizeArgs()) < 4 || isFlag(ga.sanitizeArgs()[3]) {
+		return ""
+	}
+	return ga.sanitizeArgs()[3]
+}
+
+func (ga GiksArgs) HasHook() bool {
+	return ga.Hook() != ""
+}
+
 func (ga GiksArgs) ConfigFile() string {
 	return ga.getGlobalFlag(keyGlobalConfigFlag)
 }
@@ -47,10 +59,10 @@ func (ga GiksArgs) getGlobalFlag(flag string) string {
 
 func (ga GiksArgs) Args() []string {
 	args := ga.sanitizeArgs()
-	if len(args) < 4 {
+	if len(args) < 5 {
 		return []string{}
 	}
-	return args[3:]
+	return args[4:]
 }
 
 // sanitizeArgs removes all arguments relevant for a global configuration

@@ -6,8 +6,8 @@ import (
 	"flag"
 	"fmt"
 	gargs "giks/args"
-	"giks/commands"
 	"giks/config"
+	"giks/util"
 	"github.com/mattn/go-shellwords"
 	"os"
 	"os/exec"
@@ -69,23 +69,29 @@ func ProcessHooks(ctx context.Context, gargs gargs.GiksArgs) {
 		_ = listCommand.Parse(args)
 		if listCommand.Parsed() {
 			all := *listAllAttr
-			commands.PrintTemplate(listTemplate, cfg.HookList(all))
+			util.PrintTemplate(listTemplate, cfg.HookList(all))
 		}
 	case "show":
-		ctx = config.ContextWithHook(ctx, args)
-		commands.PrintTemplate(detailsTemplate, config.HookFromContext(ctx).ToMap())
+		util.PrintTemplate(detailsTemplate, cfg.Hook(gargs.Hook()).ToMap())
 	case "exec":
-		if len(args) < 1 {
-			fmt.Printf("missing hook to execute")
-			os.Exit(1)
-		}
-		ctx = config.ContextWithHook(ctx, args)
-		if err := executeHook(ctx, args[1:]); err != nil {
+		if err := executeHook(cfg.Hook(gargs.Hook()), args); err != nil {
 			fmt.Printf("failed executing '%s' hook. Error: %s\n", args[0], err)
 			os.Exit(1)
 		}
 	case "install":
-
+		if gargs.HasHook() {
+			h := cfg.Hook(gargs.Hook())
+			installSingleHook(cfg, h, true)
+			break
+		}
+		installHookList(cfg)
+	case "uninstall":
+		if gargs.HasHook() {
+			h := cfg.Hook(gargs.Hook())
+			uninstallSingleHook(cfg, h, true)
+			break
+		}
+		uninstallHookList(cfg)
 	case "help":
 		fmt.Println("help text")
 	default:
@@ -93,21 +99,19 @@ func ProcessHooks(ctx context.Context, gargs gargs.GiksArgs) {
 	}
 }
 
-func executeHook(ctx context.Context, args []string) error {
-	h := config.HookFromContext(ctx)
+func executeHook(h config.Hook, args []string) error {
 	if !h.Enabled {
 		return fmt.Errorf("hook '%s' is not enabled", h.Name)
 	}
 	for i, step := range h.Steps {
-		if err := executeStep(ctx, step, args); err != nil {
+		if err := executeStep(h, step, args); err != nil {
 			return fmt.Errorf("failed executing step no. %d. Error: %s", i+1, err)
 		}
 	}
 	return nil
 }
 
-func executeStep(ctx context.Context, s config.Step, args []string) error {
-	h := config.HookFromContext(ctx)
+func executeStep(h config.Hook, s config.Step, args []string) error {
 	if s.Script != "" {
 		return executeScript(h.Name, s.Script, args, nil)
 	}

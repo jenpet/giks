@@ -9,16 +9,17 @@ FAIL_ON_MISMATCH="${FAIL_ON_MISMATCH:=true}"
 
 case "${GIKS_HOOK_TYPE}" in
   "commit-msg")
-    if [[ "${1}" =~ ${VALIDATION_PATTERN} ]]; then
+    MSG=$(cat "${1}" 2>/dev/null)
+    if [[ "${MSG}" =~ ${VALIDATION_PATTERN} ]]; then
       exit 0
     fi
 
     if [ "${FAIL_ON_MISMATCH}" == "false" ]; then
-      echo "WARNING: provided string '${1}' does not match required pattern '${VALIDATION_PATTERN}'."
+      echo "WARNING: provided string '${MSG}' does not match required pattern '${VALIDATION_PATTERN}'."
       exit 0
     fi
 
-    echo "ERROR: provided string '${1}' does not match required pattern '${VALIDATION_PATTERN}'."
+    echo "ERROR: provided string '${MSG}' does not match required pattern '${VALIDATION_PATTERN}'."
     exit 1
   ;;
   *)

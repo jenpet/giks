@@ -19,7 +19,7 @@ func ContextWithHook(ctx context.Context, args []string) context.Context {
 		os.Exit(1)
 	}
 	cfg := ConfigFromContext(ctx)
-	hook, err := cfg.Hook(args[0])
+	hook, err := cfg.LookupHook(args[0])
 	if err != nil {
 		fmt.Printf("failed retrieving '%s' hook. Error: %s\n", args[0], err)
 		os.Exit(1)

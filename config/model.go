@@ -3,6 +3,8 @@ package config
 import (
 	"errors"
 	"fmt"
+	"giks/git"
+	"os"
 )
 
 type Config struct {
@@ -22,13 +24,36 @@ func (c Config) HookList(all bool) map[string]Hook {
 	return hooks
 }
 
-func (c Config) Hook(name string) (*Hook, error) {
+func (c Config) HookListNames(all bool) []string {
+	list := c.HookList(all)
+	names := make([]string, len(list))
+	i := 0
+	for name := range list {
+		names[i] = name
+		i++
+	}
+	return names
+}
+
+func (c Config) LookupHook(name string) (*Hook, error) {
+	if name == "" {
+		return nil, errors.New("provided hook is empty")
+	}
 	for n, h := range c.Hooks {
 		if n == name {
 			return &h, h.validate()
 		}
 	}
 	return nil, errors.New("unknown hook")
+}
+
+func (c Config) Hook(name string) Hook {
+	h, err := c.LookupHook(name)
+	if err != nil {
+		fmt.Printf("error: could not find hook '%s'. Error: %+v", name, err)
+		os.Exit(1)
+	}
+	return *h
 }
 
 func (c Config) validate() error {
@@ -48,7 +73,7 @@ type Hook struct {
 
 func (h Hook) validate() error {
 	valid := false
-	for _, hook := range validHooks {
+	for _, hook := range git.Hooks {
 		if hook == h.Name {
 			valid = true
 		}
