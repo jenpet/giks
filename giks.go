@@ -20,6 +20,6 @@ func main() {
 		fmt.Println("Help text")
 		fmt.Printf("giks binary: '%s', giks config: '%s', git directory: '%s'", cfg.Binary, cfg.ConfigFile, cfg.GitDir)
 	default:
-		log.Errorf("Command '%s' is unknown. Run `giks help` in order to get some ideas on the hook game.")
+		log.Errorf("Command '%s' is unknown. Run `giks help` in order to get your hook game up and running.", ga.Command())
 	}
 }

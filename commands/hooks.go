@@ -5,7 +5,9 @@ import (
 	"flag"
 	"fmt"
 	gargs "giks/args"
+	"giks/commands/plugins"
 	"giks/config"
+	"giks/log"
 	"giks/util"
 	"github.com/mattn/go-shellwords"
 	"os"
@@ -13,8 +15,6 @@ import (
 	"syscall"
 	"text/template"
 )
-
-const pluginDirectory = "plugins"
 
 var listCommand = flag.NewFlagSet("list", flag.ExitOnError)
 var listAllAttr = listCommand.Bool("all", false, "include disabled hooks")
@@ -72,8 +72,7 @@ func ProcessHooks(cfg config.Config, gargs gargs.GiksArgs) {
 		util.PrintTemplate(detailsTemplate, cfg.Hook(gargs.Hook()).ToMap())
 	case "exec":
 		if err := executeHook(cfg.Hook(gargs.Hook()), args); err != nil {
-			fmt.Printf("failed executing '%s' hook. Error: %s\n", args[0], err)
-			os.Exit(1)
+			log.Errorf("failed executing '%s' hook. Error: %s", gargs.Hook(), err)
 		}
 	case "install":
 		if gargs.HasHook() {
@@ -150,11 +149,16 @@ func executeScript(hook string, path string, args []string, envs map[string]stri
 	return cmd.Run()
 }
 
-func executePlugin(hook string, plugin config.PluginStep, args []string) error {
-	pluginPath := fmt.Sprintf("./%s/%s.sh", pluginDirectory, plugin.Name)
-	err := executeScript(hook, pluginPath, args, plugin.Vars)
-	if err != nil && os.IsNotExist(err) {
-		return fmt.Errorf("the given plugin '%s' does not exist", plugin.Name)
+// TODO: aside from the pre-compiled built-in plugins also support a plugin directory containing bash scripts which can
+// be re-used to avoid copy & paste code within the config file
+func executePlugin(hook string, pCfg config.PluginStep, args []string) error {
+	p, err := plugins.Get(pCfg.Name)
+	if err != nil {
+		return err
+	}
+	exit, err := p.Run(hook, pCfg.Vars, args)
+	if err != nil && exit {
+		log.Errorf("failed executing plugin '%s'. Error: %+v", hook, err)
 	}
 	return err
 }
