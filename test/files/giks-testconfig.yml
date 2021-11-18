@@ -1,0 +1,21 @@
+hooks:
+  commit-msg:
+    enabled: true
+    steps:
+      - script: "./test/executable.sh"
+      - script: "./test/nonexc.sh"
+      - plugin:
+          name: "string-validator"
+          vars:
+            VALIDATION_PATTERN: "(FEAT|MAINT|FIX): .+"
+            FAIL_ON_MISMATCH: false
+      - command: |
+          echo "test. Commit Msg: $(cat ${1}).."
+      - exec: git status
+  pre-commit:
+    enabled: true
+    steps:
+      - command: |
+          echo "foo"
+  pre-push:
+    enabled: false

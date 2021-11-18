@@ -3,8 +3,9 @@ package main
 import (
 	"fmt"
 	"giks/args"
-	"giks/commands/hooks"
+	"giks/commands"
 	"giks/config"
+	"giks/log"
 	"os"
 )
 
@@ -14,12 +15,11 @@ func main() {
 	cfg := config.AssembleConfig(ga)
 	switch ga.Command() {
 	case "hooks":
-		hooks.ProcessHooks(cfg, ga)
+		commands.ProcessHooks(cfg, ga)
 	case "help":
 		fmt.Println("Help text")
 		fmt.Printf("giks binary: '%s', giks config: '%s', git directory: '%s'", cfg.Binary, cfg.ConfigFile, cfg.GitDir)
 	default:
-		fmt.Println("unknown command")
-		os.Exit(1)
+		log.Errorf("Command '%s' is unknown. Run `giks help` in order to get some ideas on the hook game.")
 	}
 }

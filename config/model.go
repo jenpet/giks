@@ -4,14 +4,20 @@ import (
 	"errors"
 	"fmt"
 	"giks/git"
-	"os"
+	"giks/log"
 )
 
+// Config holds the config information provided by the used configuration file and additional
+// meta information which is available at runtime.
 type Config struct {
-	Hooks map[string]Hook `yaml:"hooks"`
+	// absolute path to the used configuration file
 	ConfigFile string `yaml:"-"`
+	// absolute path to the affected git repository
 	GitDir string `yaml:"-"`
+	// absolute path to the giks binary file
 	Binary string `yaml:"-"`
+	// parsed hook configurations based on the configuration file
+	Hooks map[string]Hook `yaml:"hooks"`
 }
 
 func (c Config) HookList(all bool) map[string]Hook {
@@ -51,8 +57,7 @@ func (c Config) LookupHook(name string) (*Hook, error) {
 func (c Config) Hook(name string) Hook {
 	h, err := c.LookupHook(name)
 	if err != nil {
-		fmt.Printf("error: could not find hook '%s'. Error: %+v", name, err)
-		os.Exit(1)
+		log.Errorf("error: could not find hook '%s'. Error: %+v", name, err)
 	}
 	return *h
 }
@@ -81,9 +86,6 @@ func (h Hook) validate() error {
 	}
 	if !valid {
 		return fmt.Errorf("hook '%s' is not a valid Git hook", h.Name)
-	}
-	if h.Enabled && len(h.Steps) <= 0 {
-		return errors.New("hook enabled but validate steps are missing")
 	}
 	return nil
 }

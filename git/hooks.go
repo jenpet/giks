@@ -1,3 +1,4 @@
+// Package git provides all supported git hooks as constants in order to work on a reliable set.
 package git
 
 const (
@@ -15,6 +16,7 @@ const (
 	HookUpdate = "update"
 )
 
+// Hooks provides an array of all available Git hooks
 var Hooks = []string{
 	HookApplyPatchMsg,
 	HookCommitMsg,

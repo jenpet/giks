@@ -3,58 +3,37 @@ package config
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"giks/args"
 	"giks/log"
-	"gopkg.in/yaml.v3"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
 	"strings"
-	"sync"
 )
 
 // default filename for giks configs in case none is provided on invocation
 const defaultGiksConfigFilename = "giks.yml"
 
-func parseConfig(file string) Config {
-	var cfg Config
-	var err error
-	var once sync.Once
-	once.Do(func() {
-		var b []byte
-		cfgFile := validateConfigFile(file)
-		b, err = ioutil.ReadFile(cfgFile)
-		if err != nil {
-			return
-		}
-		err = yaml.Unmarshal(b, &cfg)
-		if err != nil {
-			err = cfg.validate()
-		}
-		for name, hook := range cfg.Hooks {
-			hook.Name = name
-			cfg.Hooks[name]= hook
-		}
-		cfg.ConfigFile = cfgFile
-	})
-	if err != nil {
-		fmt.Printf("Failed parsing giks configuration. Error: %s", err)
-		os.Exit(1)
-	}
-	return cfg
-}
-
+// AssembleConfig takes giks specific arguments and parses the configuration file for giks in order to return a config.
+// Additionally, it sanitizes the given inputs targeting files and returns a configuration which can be
+// used without bothering about paths.
 func AssembleConfig(ga args.GiksArgs) Config {
-	cfg := parseConfig(ga.ConfigFile())
-	cfg.GitDir = validateGitDirectory(ga.GitDir())
-	cfg.Binary = validateBinaryDirectory(ga.Binary())
+	cfg := parseConfigFile(ga.ConfigFile())
+	cfg.GitDir = absoluteGitDirectory(ga.GitDir())
+	cfg.Binary = absoluteBinaryPath(ga.Binary())
 	return cfg
 }
 
-func validateBinaryDirectory(binary string) string {
+// absoluteBinaryPath determines the absolute path of the binary provided as a string.
+// Three different scenarios are addressed:
+// - binary string is already provided in an absolute way
+// - binary string is provided relatively to the cwd
+// - binary string is no file at all and presumably in the $PATH of the machine
+func absoluteBinaryPath(binary string) string {
+	if binary == "" {
+		log.Error("Could not determine absolute path of binary. Provided binary name or filepath was empty.")
+	}
 	// check if the used binary file exists and might be relative or absolute
 	if fi, _ := os.Stat(binary); fi != nil {
 		// binary is already an absolute path
@@ -64,7 +43,7 @@ func validateBinaryDirectory(binary string) string {
 		// get the absolute path to the binary
 		path, err := filepath.Abs(binary)
 		if err != nil {
-			log.Errorf("Could not get absolute path to giks binary. Error: %+v", err)
+			log.Errorf("Could not get absolute path to '%s' binary. Error: %+v", binary, err)
 		}
 		return path
 	}
@@ -72,19 +51,20 @@ func validateBinaryDirectory(binary string) string {
 	// binary is presumably in the $PATH env var
 	path, err := exec.LookPath(binary)
 	if err != nil {
-		log.Errorf("Could not get absolute path to giks binary. Error: %+v", err)
+		log.Errorf("Could not get absolute path to '%s' binary. Error: %+v", binary, err)
 	}
 	return path
 }
 
-// TODO: not really validate, rather a check for fallback
-func validateConfigFile(file string) string {
+// absoluteConfigFile determines the absolute path of the provided configuration file.
+// In case no file was provided it will assume that the default configuration file is used in the cwd.
+// Absence of the configuration file will cause giks to exit.
+func absoluteConfigFile(file string) string {
 	// validate the given input file
 	if file != "" {
 		file = absoluteFilepath(file)
 		if _, err := os.Stat(file); errors.Is(err, os.ErrNotExist) {
-			fmt.Printf("The provided config file '%s' does not exist", file)
-			os.Exit(1)
+			log.Errorf("The provided config file '%s' does not exist", file)
 		}
 		return file
 	}
@@ -92,22 +72,25 @@ func validateConfigFile(file string) string {
 	// use the default by utilizing the cwd
 	path, err := os.Getwd()
 	if err != nil {
-		fmt.Println("Failed retrieving cwd. No config file provided. Fallback with default config not possible.")
-		os.Exit(1)
+		log.Error("Failed retrieving cwd. No config file provided. Fallback with default config not possible.")
 	}
 	file = absoluteFilepath(filepath.Join(path, defaultGiksConfigFilename))
+	if _, err = os.Stat(file); errors.Is(err, os.ErrNotExist) {
+		log.Errorf("No valid config file provided. Tried to read the default configuration '%s' but it does not exist.", file)
+	}
 	return file
 }
 
-// TODO: not really validate, rather a check for fallback
-func validateGitDirectory(dir string) string {
+// absoluteGitDirectory looks up the responsible git directory originating from a given directory. The absence of a
+// directory results in a fallback to the absolute path to the cwd.
+// Attention: the git command has to be present in the $PATH variable in order to identify the git directory.
+func absoluteGitDirectory(dir string) string {
 	if dir != "" {
 		dir = absoluteFilepath(dir)
 	} else {
 		path, err := os.Getwd()
 		if err != nil {
-			fmt.Println("Failed retrieving cwd. No config file provided. Fallback with default config not possible.")
-			os.Exit(1)
+			log.Error("Failed retrieving cwd. No config file provided. Fallback with default config not possible.")
 		}
 		dir = absoluteFilepath(path)
 	}
@@ -118,8 +101,7 @@ func validateGitDirectory(dir string) string {
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("Failed validating git directory '%s'. Error: %+v", dir, err)
-		os.Exit(1)
+		log.Errorf("Failed validating git directory '%s'. Error: %+v", dir, err)
 	}
 
 	// if the output of the git command is not an absolute directory it is a child of the given dir
@@ -132,6 +114,8 @@ func validateGitDirectory(dir string) string {
 	return dir
 }
 
+// absoluteFilepath returns the absolute path to a given file. Since '~' does not get resolved by the golang standard
+// library it will is manually replaced within this function.
 func absoluteFilepath(file string) string {
 	if filepath.IsAbs(file) {
 		return file
@@ -139,15 +123,13 @@ func absoluteFilepath(file string) string {
 	if strings.HasPrefix(file, "~" ) {
 		u, err := user.Current()
 		if err != nil {
-			fmt.Printf("Could not retrieve user home directory due to usage of '%s'. Error: %+v", file, err)
-			os.Exit(1)
+			log.Errorf("Could not retrieve user home directory due to usage of '%s'. Error: %+v", file, err)
 		}
 		file = strings.Replace(file, "~", u.HomeDir, 1)
 	}
 	file, err := filepath.Abs(file)
 	if err != nil {
-		fmt.Printf("Could not get absolute filepath for file '%s'. Error: %+v", file, err)
-		os.Exit(1)
+		log.Errorf("Could not get absolute filepath for file '%s'. Error: %+v", file, err)
 	}
 	return file
 }
