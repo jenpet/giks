@@ -8,13 +8,13 @@ import (
 
 func TestGiksArgs_whenInputsVary_shouldResultInNoError(t *testing.T) {
 	argTests := []struct {
-		name string
-		input []string
+		name           string
+		input          []string
 		expectedBinary string
-		expectedCmd string
+		expectedCmd    string
 		expectedSubCmd string
-		expectedHook string
-		expectedArgs []string
+		expectedHook   string
+		expectedArgs   []string
 	}{
 		{
 			"full-blown input",

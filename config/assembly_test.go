@@ -13,7 +13,7 @@ import (
 func TestAssembleConfig_shouldParseConfigAndValidatePaths(t *testing.T) {
 	// using the 'true' command as a giks command test replacement
 	var ga args.GiksArgs = []string{"true", "hooks", "exec", "commit-msg", "--config=../test/files/giks-testconfig.yml", "--git-dir=../test/git-dir/"}
-	absCfg,_ := filepath.Abs("../test/files/giks-testconfig.yml")
+	absCfg, _ := filepath.Abs("../test/files/giks-testconfig.yml")
 	bin, _ := exec.LookPath("true")
 	repo := gitRepo{dir: "../test/git-dir"}
 	repo.init()
@@ -34,12 +34,12 @@ func TestAbsoluteFilePath_shouldResolveCorrectly(t *testing.T) {
 		{
 			"home dir",
 			"~/foo/bar",
-			func() string { u, _ := user.Current(); return u.HomeDir + "/foo/bar"}(),
+			func() string { u, _ := user.Current(); return u.HomeDir + "/foo/bar" }(),
 		},
 		{
 			"relative",
 			"./test",
-			func() string { cwd, _ := os.Getwd(); return cwd + "/test"}(),
+			func() string { cwd, _ := os.Getwd(); return cwd + "/test" }(),
 		},
 		{
 			"absolute",

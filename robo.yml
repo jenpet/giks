@@ -1,11 +1,63 @@
 build:
   summary: builds the giks binary
+  usage: build "<operating system>/<architecture>" defaults to "darwin/amd64"
   command: |
     set -e
-    GOARCH=amd64 GOOS=${1:-darwin} CGO_ENABLED=0 go build -ldflags='-w -s -extldflags "-static"' -a \
-      -o {{ .robo.path }}/{{ .binary }} . && \
-    chmod a+rwx {{ .binary }}
+    # default platform
+    platforms=("darwin/amd64")
+    if [ "${1}" = "all" ]; then
+      platforms=({{ .build.platforms }})
+    elif [ ! -z "${1}" ]; then
+      platforms=("${1}")
+    fi
+    echo "Building for ${#platforms[@]} platform(s): ${platforms[*]}"
+    for platform in ${platforms[*]}
+    do
+      platform_split=(${platform//\// })
+      if [ ! ${#platform_split[@]} -eq 2 ]; then
+        echo "Provided platform ${platform} could not be used to build a valid binary."
+      fi
+      os=${platform_split[0]}
+      arch=${platform_split[1]}
+      binary="{{ .build.binary }}_${os}_${arch}"
+      # append '.exe' suffix in case it should be built for windows
+      if [ "${os}" = "windows" ]; then
+        binary+=".exe"
+      fi
+
+      echo "Building for operating system '${os}' and arch '${arch}' into binary '${binary}'"
+      GOARCH="${arch}" GOOS=${os} CGO_ENABLED=0 go build -ldflags='-w -s -extldflags "-static"' -a \
+        -o {{ .robo.path }}/${binary} . && \
+        chmod a+rwx {{ .robo.path }}/${binary}
+    done
+
+test:
+  summary: runs all tests uncached
+  command: |
+    go test --covermode=atomic -count=1 $(go list ./... | grep -v /cmd)
+
+pretty:
+  summary: |
+    formats the code and cleans up dependencies. Providing an additional parameter 'fail' will cause the
+    task to fail in case git has untracked files after running the formatting and cleanups. Default value of this param
+    is 'ignore' in case it's omitted.
+  command: |
+    go mod tidy && go fmt ./...
+
+    FAIL=${1:-ignore}
+    if [ "${FAIL}" = "fail" ]; then
+      UNTRACKED_FILES=$(git status --porcelain)
+      if [ ! -z "${UNTRACKED_FILES}" ]; then
+        git status
+        git --no-pager diff
+        echo "Running 'robo pretty' resulted in untracked files. Exiting..."
+        exit 1
+      fi
+    fi
 
 variables:
   binary: build/dist/giks
   rcmd: robo -c {{ .robo.file }}
+  build:
+    binary: build/dist/giks
+    platforms: darwin/amd64 freebsd/386 freebsd/amd64 freebsd/arm linux/386 linux/amd64 linux/arm linux/mips linux/mips64 linux/mips64le linux/mipsle linux/s390x netbsd/386 netbsd/amd64 netbsd/arm openbsd/386 openbsd/amd64 windows/386 windows/amd64

@@ -18,8 +18,8 @@ const hookMask = 0755
 
 var (
 	errHookExternallyManaged = errors.New("hook is externally managed")
-	errHookAlreadyInstalled = errors.New("hook is already installed")
-	errHookNotInstalled = errors.New("hook is not installed")
+	errHookAlreadyInstalled  = errors.New("hook is already installed")
+	errHookNotInstalled      = errors.New("hook is not installed")
 )
 
 var hookTemplateString = `
@@ -35,7 +35,7 @@ func installSingleHook(cfg config.Config, h config.Hook, confirmation bool) {
 		verifyUserConfirmation(fmt.Sprintf("Do you want to install hook '%s' for git directory '%s'", h.Name, cfg.GitDir))
 	}
 	if err := installHook(cfg, h.Name, false); err != nil {
-		if errors.Is(err, errHookAlreadyInstalled) || errors.Is(err, errHookExternallyManaged){
+		if errors.Is(err, errHookAlreadyInstalled) || errors.Is(err, errHookExternallyManaged) {
 			log.Warnf("Hook '%s' was not installed. Reason: %+v", h.Name, err)
 			return
 		}
@@ -48,7 +48,7 @@ func uninstallSingleHook(cfg config.Config, h config.Hook, confirmation bool) {
 		verifyUserConfirmation(fmt.Sprintf("Do you want to uninstall hook '%s' for git directory '%s'", h.Name, cfg.GitDir))
 	}
 	if err := uninstallHook(cfg, h.Name); err != nil {
-		if errors.Is(err, errHookNotInstalled) || errors.Is(err, errHookExternallyManaged){
+		if errors.Is(err, errHookNotInstalled) || errors.Is(err, errHookExternallyManaged) {
 			log.Warnf("Hook '%s' was not uninstalled. Reason: %+v", h.Name, err)
 			return
 		}
@@ -96,7 +96,7 @@ func installHook(cfg config.Config, hookName string, force bool) error {
 
 func uninstallHook(cfg config.Config, hookName string) error {
 	ok, err := hookIsInstalled(cfg, hookName)
-	if err != nil  {
+	if err != nil {
 		return err
 	}
 	if !ok {
@@ -140,8 +140,8 @@ func hookFileContent(cfg config.Config, hookName string) string {
 	}
 	var content bytes.Buffer
 	tpl, _ := template.New("hook").Parse(hookTemplateString)
-	data := map[string]string {
-		"name": hookName,
+	data := map[string]string{
+		"name":    hookName,
 		"command": cmd,
 	}
 	_ = tpl.Execute(&content, data)

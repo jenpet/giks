@@ -44,7 +44,6 @@ STEPS: {{ len .steps }}
 {{ end -}}
 `
 
-
 var listTemplate *template.Template
 var detailsTemplate *template.Template
 
@@ -192,8 +191,8 @@ func runExec(hook string, line string, args []string) error {
 
 func envsToList(envs map[string]string) []string {
 	var list []string
-	for k,v := range envs {
-		list = append(list, fmt.Sprintf("%s=%s", k,v))
+	for k, v := range envs {
+		list = append(list, fmt.Sprintf("%s=%s", k, v))
 	}
 	return list
 }

@@ -72,7 +72,7 @@ func (ga GiksArgs) Args() []string {
 // sanitizeArgs removes all arguments relevant for a global configuration
 func (ga GiksArgs) sanitizeArgs() []string {
 	var sanatized []string
-	OUTER:
+OUTER:
 	for _, arg := range ga {
 		for _, flag := range globalFlags {
 			if strings.HasPrefix(arg, flag) {
@@ -91,5 +91,3 @@ func (ga GiksArgs) Raw() []string {
 func isFlag(s string) bool {
 	return strings.HasPrefix(s, "--")
 }
-
-

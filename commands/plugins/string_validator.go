@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-type StringValidator struct {}
+type StringValidator struct{}
 
 func (sv StringValidator) ID() string {
 	return "string-validator"

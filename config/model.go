@@ -24,7 +24,7 @@ func (c Config) HookList(all bool) map[string]Hook {
 	hooks := map[string]Hook{}
 	for name, h := range c.Hooks {
 		// has to be valid and the all flag also returns disabled ones
-		if h.validate() == nil && (all || h.Enabled)  {
+		if h.validate() == nil && (all || h.Enabled) {
 			hooks[name] = h
 		}
 	}
@@ -63,7 +63,7 @@ func (c Config) Hook(name string) Hook {
 }
 
 func (c Config) validate() error {
-	for name,h := range c.Hooks {
+	for name, h := range c.Hooks {
 		if err := h.validate(); err != nil {
 			return fmt.Errorf("hook '%s' is invalid: %s", name, err)
 		}
@@ -72,9 +72,9 @@ func (c Config) validate() error {
 }
 
 type Hook struct {
-	Enabled bool `yaml:"enabled"`
-	Steps []Step `yaml:"steps"`
-	Name string `yaml:"-"`
+	Enabled bool   `yaml:"enabled"`
+	Steps   []Step `yaml:"steps"`
+	Name    string `yaml:"-"`
 }
 
 func (h Hook) validate() error {
@@ -102,12 +102,11 @@ func (h Hook) ToMap() map[string]interface{} {
 	return m
 }
 
-
 type Step struct {
-	Command string `yaml:"command"`
-	Exec string `yaml:"exec"`
-	Script string     `yaml:"script"`
-	Plugin PluginStep `yaml:"plugin"`
+	Command string     `yaml:"command"`
+	Exec    string     `yaml:"exec"`
+	Script  string     `yaml:"script"`
+	Plugin  PluginStep `yaml:"plugin"`
 }
 
 func (s Step) ToMap() map[string]interface{} {
@@ -126,8 +125,8 @@ func (s Step) ToMap() map[string]interface{} {
 
 	if s.Plugin.Validate() == nil {
 		vars := map[string]string{}
-		for k,v := range s.Plugin.Vars {
-			vars[k]=v
+		for k, v := range s.Plugin.Vars {
+			vars[k] = v
 		}
 		info := map[string]interface{}{}
 		info["name"] = s.Plugin.Name
@@ -162,7 +161,7 @@ func (s Step) validate() error {
 }
 
 type PluginStep struct {
-	Name string `yaml:"name"`
+	Name string            `yaml:"name"`
 	Vars map[string]string `yaml:"vars"`
 }
 

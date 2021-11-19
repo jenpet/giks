@@ -17,7 +17,7 @@ func TestParseConfigFile_whenInputIsValid_shouldParseCorrectly(t *testing.T) {
 	assert.Len(t, cfg.HookList(true), 3, "hook list should be filtered for active hooks")
 
 	// test Hook() and LookupHook()
-	assert.Equal(t, Hook{false, nil,"pre-push"}, cfg.Hook("pre-push"), "hook from the config should be returned")
+	assert.Equal(t, Hook{false, nil, "pre-push"}, cfg.Hook("pre-push"), "hook from the config should be returned")
 	lookup, err := cfg.LookupHook("absent")
 	assert.Nil(t, lookup, "no hook result expected when looking up an absent hook")
 	assert.Error(t, err, "error expected when looking up an absent hook")
@@ -31,7 +31,7 @@ func TestParseConfigFile_whenInputIsValid_shouldParseCorrectly(t *testing.T) {
 
 func TestParseConfig_whenInputIsInvalid_shouldReturnError(t *testing.T) {
 	configTests := []struct {
-		name string
+		name  string
 		input io.Reader
 	}{
 		{

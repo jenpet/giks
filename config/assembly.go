@@ -120,7 +120,7 @@ func absoluteFilepath(file string) string {
 	if filepath.IsAbs(file) {
 		return file
 	}
-	if strings.HasPrefix(file, "~" ) {
+	if strings.HasPrefix(file, "~") {
 		u, err := user.Current()
 		if err != nil {
 			log.Errorf("Could not retrieve user home directory due to usage of '%s'. Error: %+v", file, err)

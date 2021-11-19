@@ -21,7 +21,7 @@ func parseConfig(r io.Reader) (*Config, error) {
 	}
 	for name, hook := range cfg.Hooks {
 		hook.Name = name
-		cfg.Hooks[name]= hook
+		cfg.Hooks[name] = hook
 	}
 	if err = cfg.validate(); err != nil {
 		return nil, parseError(err.Error())
@@ -42,7 +42,6 @@ func parseConfigFile(file string) Config {
 	}
 	return *cfg
 }
-
 
 func parseError(reason string) error {
 	return fmt.Errorf("provided configuration malformed, reason: %s", reason)
