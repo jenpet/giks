@@ -33,7 +33,7 @@ func (sv StringValidator) Run(hook string, vars map[string]string, args []string
 		}
 		return failOnMismatch, validateString(string(b), vars["VALIDATION_PATTERN"])
 	default:
-		log.Warnf("hook '%s' not supported by string validator")
+		log.Warnf("hook '%s' not supported by string validator", hook)
 		return false, nil
 	}
 }

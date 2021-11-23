@@ -1,0 +1,43 @@
+name: "Commit Validation"
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_call:
+    inputs:
+      upload_artifacts:
+        type: boolean
+        description: 'Indicator whether to persist / upload the artifacts'
+        default: false
+        required: false
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+      - name: Set Up Context
+        run: |
+          # change the default shell from dash (ubuntu) to bash
+          echo "dash dash/sh boolean false" | sudo debconf-set-selections
+          sudo DEBIAN_FRONTEND=noninteractive dpkg-reconfigure dash
+          curl -sf https://gobinaries.com/tj/robo | sh
+      - name: Test
+        run: robo test
+      - name: Extract Version
+        id: extract_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+      - name: Build
+        run: robo build all
+      - name: Artifact Upload
+        if: inputs.upload_artifacts == true
+        uses: actions/upload-artifact@v2
+        with:
+          name: giks-dist-${{steps.extract_version.outputs.VERSION}}
+          path: build/dist/
