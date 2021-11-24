@@ -7,6 +7,7 @@ import (
 	gargs "giks/args"
 	"giks/commands/plugins"
 	"giks/config"
+	"giks/git"
 	"giks/log"
 	"giks/util"
 	"github.com/mattn/go-shellwords"
@@ -70,7 +71,7 @@ func ProcessHooks(cfg config.Config, gargs gargs.GiksArgs) {
 	case "show":
 		util.PrintTemplate(detailsTemplate, cfg.Hook(gargs.Hook()).ToMap())
 	case "exec":
-		if err := executeHook(cfg.Hook(gargs.Hook()), args); err != nil {
+		if err := executeHook(cfg, gargs); err != nil {
 			log.Errorf("failed executing '%s' hook. Error: %s", gargs.Hook(), err)
 		}
 	case "install":
@@ -94,39 +95,41 @@ func ProcessHooks(cfg config.Config, gargs gargs.GiksArgs) {
 	}
 }
 
-func executeHook(h config.Hook, args []string) error {
+func executeHook(cfg config.Config, gargs gargs.GiksArgs) error {
+	h := cfg.Hook(gargs.Hook())
 	if !h.Enabled {
 		return fmt.Errorf("hook '%s' is not enabled", h.Name)
 	}
+	vars := giksVars(cfg, gargs)
 	for i, step := range h.Steps {
-		if err := executeStep(h, step, args); err != nil {
+		if err := executeStep(h, step, gargs, vars); err != nil {
 			return fmt.Errorf("failed executing step no. %d. Error: %s", i+1, err)
 		}
 	}
 	return nil
 }
 
-func executeStep(h config.Hook, s config.Step, args []string) error {
+func executeStep(h config.Hook, s config.Step, args []string, vars map[string]string) error {
 	if s.Script != "" {
-		return executeScript(h.Name, s.Script, args, nil)
+		return executeScript(s.Script, args, vars)
 	}
 
 	if s.Command != "" {
-		return executeCommand(h.Name, s.Command, args)
+		return executeCommand(s.Command, args, vars)
 	}
 
 	if s.Exec != "" {
-		return runExec(h.Name, s.Exec, args)
+		return runExec(s.Exec, args, vars)
 	}
 
 	if err := s.Plugin.Validate(); err == nil {
-		return executePlugin(h.Name, s.Plugin, args)
+		return executePlugin(h.Name, s.Plugin, args, vars)
 	}
 
 	return errors.New("step seems to be invalid")
 }
 
-func executeScript(hook string, path string, args []string, envs map[string]string) error {
+func executeScript(path string, args []string, vars map[string]string) error {
 	stat, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -140,8 +143,7 @@ func executeScript(hook string, path string, args []string, envs map[string]stri
 	}
 
 	cmd := exec.Command(bin, args...)
-	cmd.Env = append(os.Environ(), envsToList(envs)...)
-	cmd.Env = append(cmd.Env, fmt.Sprintf("GIKS_HOOK_TYPE=%s", hook))
+	cmd.Env = append(os.Environ(), varsToList(vars)...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -150,29 +152,33 @@ func executeScript(hook string, path string, args []string, envs map[string]stri
 
 // TODO: aside from the pre-compiled built-in plugins also support a plugin directory containing bash scripts which can
 // be re-used to avoid copy & paste code within the config file
-func executePlugin(hook string, pCfg config.PluginStep, args []string) error {
+func executePlugin(hook string, pCfg config.PluginStep, args []string, vars map[string]string) error {
 	p, err := plugins.Get(pCfg.Name)
 	if err != nil {
 		return err
 	}
-	exit, err := p.Run(hook, pCfg.Vars, args)
+	// merge plugin variables with vars given by giks itself
+	for k, v := range pCfg.Vars {
+		vars[k] = v
+	}
+	exit, err := p.Run(hook, vars, args)
 	if err != nil && exit {
 		log.Errorf("failed executing plugin '%s'. Error: %+v", hook, err)
 	}
 	return err
 }
 
-func executeCommand(hook string, command string, args []string) error {
+func executeCommand(command string, args []string, vars map[string]string) error {
 	args = append([]string{"-c", command}, args...)
 	cmd := exec.Command("sh", args...)
-	cmd.Env = append(cmd.Env, fmt.Sprintf("GIKS_HOOK_TYPE=%s", hook))
+	cmd.Env = append(cmd.Env, varsToList(vars)...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
-func runExec(hook string, line string, args []string) error {
+func runExec(line string, args []string, vars map[string]string) error {
 	parts, err := shellwords.Parse(line)
 	if err != nil {
 		return fmt.Errorf("could not parse exec '%s'", line)
@@ -183,16 +189,22 @@ func runExec(hook string, line string, args []string) error {
 	if err != nil {
 		return fmt.Errorf("binary not found for exec '%s'", line)
 	}
-	env := os.Environ()
-	env = append(env, fmt.Sprintf("GIKS_HOOK_TYPE=%s", hook))
+	env := append(os.Environ(), varsToList(vars)...)
 	args = append(parts, args...)
 	return syscall.Exec(path, args, env)
 }
 
-func envsToList(envs map[string]string) []string {
+func varsToList(envs map[string]string) []string {
 	var list []string
 	for k, v := range envs {
 		list = append(list, fmt.Sprintf("%s=%s", k, v))
 	}
 	return list
+}
+
+func giksVars(cfg config.Config, gargs gargs.GiksArgs) map[string]string {
+	var vars map[string]string
+	_, _ = git.StagedFilesLister{}.Enrich(cfg.GitDir, vars)
+	vars["GIKS_HOOK_TYPE"] = gargs.Hook()
+	return vars
 }
