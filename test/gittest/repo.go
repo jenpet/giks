@@ -20,6 +20,7 @@ type TestRepository struct {
 }
 
 func (tr TestRepository) init() {
+	_ = os.MkdirAll(tr.dir, 0777)
 	cmd := exec.Command("git", "init", tr.dir)
 	if err := cmd.Run(); err != nil {
 		panic("could not initiate test git repo. Error: " + err.Error())
