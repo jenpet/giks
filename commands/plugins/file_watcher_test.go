@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"path"
 	"testing"
 	"time"
 )
@@ -54,6 +55,7 @@ func TestFileWatcher(t *testing.T) {
 	for _, tt := range fileWatcherTests {
 		t.Run(tt.name, func(t *testing.T) {
 			file := testFileName()
+			_ = os.MkdirAll(path.Dir(file), 0777)
 			vars := map[string]string{
 				"FILE_WATCHER_PATTERN":    tt.pattern,
 				"FILE_WATCHER_COMMAND":    "touch " + file,

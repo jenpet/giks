@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -55,9 +56,12 @@ func (fw FileWatcher) Run(hook string, vars map[string]string, args []string) (b
 	switch hook {
 	case "pre-commit":
 		if singleFileMatchesPattern(files, pattern) {
+			var buf bytes.Buffer
+			cmd.Stdout = &buf
+			cmd.Stderr = &buf
 			err = cmd.Run()
 			if err != nil {
-				return false, fmt.Errorf("files matched pattern but command failed: %+v", err)
+				return false, fmt.Errorf("files matched pattern but command failed: %+v: %s", err, buf.String())
 			}
 			return true, nil
 		}
