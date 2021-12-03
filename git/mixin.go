@@ -3,44 +3,51 @@ package git
 import (
 	"bytes"
 	"fmt"
+	"giks/log"
 	"os/exec"
 	"strings"
 )
 
-type Mixin interface {
-	ID() string
-	Enrich(dir string, vars map[string]string) (bool, error)
+var mixins = map[string]mixinFunc{
+	"MODIFIED_FILES": mixinModifiedFiles,
+	"STAGED_FILES":   mixinStagedFiles,
 }
 
-var Mixins = []Mixin{
-	StagedFilesLister{},
-}
-
-// GetMixin returns a plugin for the given name (identifier). In case none was found an error is returned.
-func GetMixin(name string) (Mixin, error) {
-	for _, p := range Mixins {
-		if p.ID() == name || p.ID() == strings.ToUpper(name) {
-			return p, nil
+func ApplyMixins(dir string, vars map[string]string) {
+	for n, m := range mixins {
+		if err := m(dir, vars); err != nil {
+			log.Warnf("Failed applying git mixin '%s'. Error: %s", n, err)
 		}
 	}
-	return nil, fmt.Errorf("mixin '%s' not found", name)
 }
 
-type StagedFilesLister struct{}
+type mixinFunc func(dir string, vars map[string]string) error
 
-func (sfl StagedFilesLister) ID() string {
-	return "STAGED_FILES"
+var mixinModifiedFiles = func(dir string, vars map[string]string) error {
+	out, err := execGitCommand(dir, "ls-files", "-m")
+	if err != nil {
+		return err
+	}
+	vars["GIKS_MIXIN_MODIFIED_FILES"] = strings.Replace(out, "\n", " ", -1)
+	return nil
 }
 
-func (sfl StagedFilesLister) Enrich(dir string, vars map[string]string) (bool, error) {
-	cmd := exec.Command("git", "-C", dir, "diff", "--cached", "--name-only")
+var mixinStagedFiles = func(dir string, vars map[string]string) error {
+	out, err := execGitCommand(dir, "diff", "--cached", "--name-only")
+	if err != nil {
+		return err
+	}
+	vars["GIKS_MIXIN_STAGED_FILES"] = strings.Replace(out, "\n", " ", -1)
+	return nil
+}
+
+func execGitCommand(dir string, arg ...string) (string, error) {
+	cmd := exec.Command("git", append([]string{"-C", dir}, arg...)...)
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
+	cmd.Stderr = &buf
 	if err := cmd.Run(); err != nil {
-		return false, err
+		return "", fmt.Errorf("failed executing git command '%s'. Error: %s", strings.Join(arg, " "), buf.String())
 	}
-	s := buf.String()
-	files := strings.Replace(s, "\n", " ", -1)
-	vars["GIKS_MIXIN_STAGED_FILES"] = files
-	return true, nil
+	return buf.String(), nil
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/mattn/go-shellwords"
 	"os"
 	"os/exec"
+	"path"
 	"syscall"
 	"text/template"
 )
@@ -203,8 +204,8 @@ func varsToList(envs map[string]string) []string {
 }
 
 func giksVars(cfg config.Config, gargs gargs.GiksArgs) map[string]string {
-	var vars map[string]string
-	_, _ = git.StagedFilesLister{}.Enrich(cfg.GitDir, vars)
+	vars := map[string]string{}
+	git.ApplyMixins(path.Dir(cfg.GitDir), vars)
 	vars["GIKS_HOOK_TYPE"] = gargs.Hook()
 	return vars
 }
