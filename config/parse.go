@@ -36,10 +36,10 @@ func parseConfigFile(file string) Config {
 		log.Errorf("Failed accessing configuration file. Error: %s", err)
 	}
 	cfg, err := parseConfig(fh)
-	cfg.ConfigFile = absFile
 	if err != nil {
 		log.Errorf("Failed parsing provided configuration. Error: %s", err)
 	}
+	cfg.ConfigFile = absFile
 	return *cfg
 }
 

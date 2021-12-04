@@ -45,6 +45,7 @@ func TestParseConfig_whenInputIsInvalid_shouldReturnError(t *testing.T) {
 		{
 			"unsupported hook",
 			strings.NewReader(`
+version: 1
 hooks:
   foo:
     enabled: true`),

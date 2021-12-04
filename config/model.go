@@ -8,6 +8,9 @@ import (
 	"strings"
 )
 
+// minimumConfigVersion which the giks binary requires
+const minimumConfigVersion = 1.0
+
 // Config holds the config information provided by the used configuration file and additional
 // meta information which is available at runtime.
 type Config struct {
@@ -19,6 +22,8 @@ type Config struct {
 	Binary string `yaml:"-"`
 	// parsed hook configurations based on the configuration file
 	Hooks map[string]Hook `yaml:"hooks"`
+	// version of the configuration in case backwards compatibility is not an option at some point
+	Version float32 `yaml:"version"`
 }
 
 func (c Config) HookList(all bool) map[string]Hook {
@@ -68,6 +73,9 @@ func (c Config) validate() error {
 		if err := h.validate(); err != nil {
 			return fmt.Errorf("hook '%s' is invalid: %s", name, err)
 		}
+	}
+	if c.Version < minimumConfigVersion {
+		return fmt.Errorf("configuration is missing version or is not supported. Minimum required version is '%g'", minimumConfigVersion)
 	}
 	return nil
 }
