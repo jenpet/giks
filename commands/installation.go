@@ -26,7 +26,7 @@ var hookTemplateString = `
 # GIKS-ZONE!
 # This {{ .name }} hook is managed via giks (https://github.com/jenpet/giks).
 # You should not alter this file manually except you do it tenderly and know what you are actually doing.
-# To remove this hook run 'giks hooks uninstall {{ .name }}'.
+# To remove this hook run 'giks uninstall {{ .name }}'.
 {{ .command }}
 `
 
@@ -149,7 +149,7 @@ func hookFileContent(cfg config.Config, hookName string) string {
 }
 
 func commandString(cfg config.Config, hookName string) (string, error) {
-	cmd := fmt.Sprintf("%s hooks exec %s --config=%s", cfg.Binary, hookName, cfg.ConfigFile)
+	cmd := fmt.Sprintf("%s exec %s --config=%s", cfg.Binary, hookName, cfg.ConfigFile)
 	switch hookName {
 	case git.HookCommitMsg:
 		return fmt.Sprintf("%s ${1}", cmd), nil

@@ -3,6 +3,7 @@ package args
 
 import (
 	"fmt"
+	"giks/git"
 	"strings"
 )
 
@@ -21,23 +22,27 @@ func (ga GiksArgs) Binary() string {
 
 func (ga GiksArgs) Command() string {
 	if len(ga.sanitizeArgs()) < 2 || isFlag(ga.sanitizeArgs()[1]) {
-		return "help"
+		return ""
 	}
 	return ga.sanitizeArgs()[1]
 }
 
 func (ga GiksArgs) SubCommand() string {
-	if len(ga.sanitizeArgs()) < 3 || isFlag(ga.sanitizeArgs()[2]) {
-		return "help"
+	// if there are not enough arguments, the subcommand argument is a flag or a valid git hook treat consider the subcommand absent
+	sargs := ga.sanitizeArgs()
+	if len(sargs) < 3 || isFlag(sargs[2]) || git.IsValidHook(sargs[2]) {
+		return ""
 	}
 	return ga.sanitizeArgs()[2]
 }
 
 func (ga GiksArgs) Hook() string {
-	if len(ga.sanitizeArgs()) < 4 || isFlag(ga.sanitizeArgs()[3]) {
-		return ""
+	for _, arg := range ga.sanitizeArgs() {
+		if git.IsValidHook(arg) {
+			return arg
+		}
 	}
-	return ga.sanitizeArgs()[3]
+	return ""
 }
 
 func (ga GiksArgs) HasHook() bool {
@@ -62,11 +67,13 @@ func (ga GiksArgs) getGlobalFlag(flag string) string {
 }
 
 func (ga GiksArgs) Args() []string {
-	args := ga.sanitizeArgs()
-	if len(args) < 5 {
-		return []string{}
+	args := []string{}
+	for _, arg := range ga.sanitizeArgs() {
+		if isFlag(arg) {
+			args = append(args, arg)
+		}
 	}
-	return args[4:]
+	return args
 }
 
 // sanitizeArgs removes all arguments relevant for a global configuration

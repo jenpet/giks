@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"giks/git"
 	"giks/log"
+	"strings"
 )
 
 // Config holds the config information provided by the used configuration file and additional
@@ -112,7 +113,7 @@ type Step struct {
 func (s Step) ToMap() map[string]interface{} {
 	m := map[string]interface{}{}
 	if s.Command != "" {
-		m["command"] = s.Command
+		m["command"] = strings.TrimSpace(s.Command)
 	}
 
 	if s.Exec != "" {

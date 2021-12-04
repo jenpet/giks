@@ -31,3 +31,12 @@ var Hooks = []string{
 	HookPrepareCommitMsg,
 	HookUpdate,
 }
+
+func IsValidHook(hook string) bool {
+	for _, h := range Hooks {
+		if hook == h {
+			return true
+		}
+	}
+	return false
+}
