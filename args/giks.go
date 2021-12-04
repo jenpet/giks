@@ -1,4 +1,4 @@
-// Package args TODO: Document assumptions about the command, subcommand, hock and flag structure including global flags
+// Package args TODO: Document assumptions about the command, subcommand, hook and flag structure including global flags
 package args
 
 import (

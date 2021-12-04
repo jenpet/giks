@@ -17,7 +17,7 @@ func (sv StringValidator) ID() string {
 	return "string-validator"
 }
 
-func (sv StringValidator) Run(hook string, vars map[string]string, args []string) (bool, error) {
+func (sv StringValidator) Run(workingDir string, hook string, vars map[string]string, args []string) (bool, error) {
 	failOnMismatch := false
 	err := extractVar(varFailOnMismatch, vars, func(val string) error {
 		var err error

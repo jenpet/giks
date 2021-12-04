@@ -18,6 +18,8 @@ type Config struct {
 	ConfigFile string `yaml:"-"`
 	// absolute path to the affected git repository
 	GitDir string `yaml:"-"`
+	// working directory for hook executions which defaults to the root of the repository
+	WorkingDir string `yaml:"-"`
 	// absolute path to the giks binary file
 	Binary string `yaml:"-"`
 	// parsed hook configurations based on the configuration file

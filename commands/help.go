@@ -37,12 +37,12 @@ func printHelp(cfg config.Config, gargs gargs.GiksArgs) {
 		"binary": cfg.Binary,
 		"config": cfg.ConfigFile,
 		"gitdir": cfg.GitDir,
-		"args": strings.Join(gargs.Args(), ""),
+		"args":   strings.Join(gargs.Args(), ""),
 	}
 	var data map[string]interface{}
 	_ = helpCommand.Parse(gargs.Args())
 	if helpCommand.Parsed() && *debugAttr {
-		data = map[string]interface{}{"debug":debug}
+		data = map[string]interface{}{"debug": debug}
 	}
 	cli.PrintTemplate(helpTemplate, data)
 }

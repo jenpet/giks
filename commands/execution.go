@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"syscall"
 	"text/template"
 )
@@ -65,34 +66,34 @@ func executeHook(cfg config.Config, gargs gargs.GiksArgs) error {
 	}
 	vars := giksVars(cfg, gargs)
 	for i, step := range h.Steps {
-		if err := executeStep(h, step, gargs, vars); err != nil {
+		if err := executeStep(cfg.WorkingDir, h, step, gargs, vars); err != nil {
 			return fmt.Errorf("failed executing step no. %d. Error: %s", i+1, err)
 		}
 	}
 	return nil
 }
 
-func executeStep(h config.Hook, s config.Step, args []string, vars map[string]string) error {
+func executeStep(workingDir string, h config.Hook, s config.Step, args []string, vars map[string]string) error {
 	if s.Script != "" {
-		return executeScript(s.Script, args, vars)
+		return executeScript(workingDir, s.Script, args, vars)
 	}
 
 	if s.Command != "" {
-		return executeCommand(s.Command, args, vars)
+		return executeCommand(workingDir, s.Command, args, vars)
 	}
 
 	if s.Exec != "" {
-		return runExec(s.Exec, args, vars)
+		return runExec(workingDir, s.Exec, args, vars)
 	}
 
 	if err := s.Plugin.Validate(); err == nil {
-		return executePlugin(h.Name, s.Plugin, args, vars)
+		return executePlugin(workingDir, h.Name, s.Plugin, args, vars)
 	}
 
 	return errors.New("step seems to be invalid")
 }
 
-func executeScript(path string, args []string, vars map[string]string) error {
+func executeScript(workingDir string, path string, args []string, vars map[string]string) error {
 	stat, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -107,6 +108,7 @@ func executeScript(path string, args []string, vars map[string]string) error {
 
 	cmd := exec.Command(bin, args...)
 	cmd.Env = append(os.Environ(), varsToList(vars)...)
+	cmd.Dir = workingDir
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -114,26 +116,35 @@ func executeScript(path string, args []string, vars map[string]string) error {
 }
 
 // TODO: aside from the pre-compiled built-in plugins also support a plugin directory containing bash scripts which can
+// TODO: Allow Env variables and commands to be plugin arguments
 // be re-used to avoid copy & paste code within the config file
-func executePlugin(hook string, pCfg config.PluginStep, args []string, vars map[string]string) error {
+func executePlugin(workingDir string, hook string, pCfg config.PluginStep, args []string, vars map[string]string) error {
 	p, err := plugins.Get(pCfg.Name)
 	if err != nil {
 		return err
 	}
-	// merge plugin variables with vars given by giks itself
+	// merge plugin variables with vars given by giks itself and replace values of the plugin with the present value
+	// of the giks variable
 	for k, v := range pCfg.Vars {
+		// in case a value of a plugin variable is the key of a giks variable
+		// replace it accordingly
+		if val, ok := vars[strings.TrimSpace(v)]; ok {
+			vars[k] = val
+			continue
+		}
 		vars[k] = v
 	}
-	exit, err := p.Run(hook, vars, args)
+	exit, err := p.Run(workingDir, hook, vars, args)
 	if err != nil && exit {
-		log.Errorf("failed executing plugin '%s'. Error: %+v", hook, err)
+		log.Errorf("failed executing plugin '%s'. Error: %+v", pCfg.Name, err)
 	}
 	return err
 }
 
-func executeCommand(command string, args []string, vars map[string]string) error {
+func executeCommand(workingDir string, command string, args []string, vars map[string]string) error {
 	args = append([]string{"-c", command}, args...)
 	cmd := exec.Command("sh", args...)
+	cmd.Dir = workingDir
 	cmd.Env = append(cmd.Env, varsToList(vars)...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -141,7 +152,10 @@ func executeCommand(command string, args []string, vars map[string]string) error
 	return cmd.Run()
 }
 
-func runExec(line string, args []string, vars map[string]string) error {
+func runExec(workingDir string, line string, args []string, vars map[string]string) error {
+	if err := os.Chdir(workingDir); err == nil {
+		return fmt.Errorf("could not change into working directory '%s'. Error: %+v", workingDir, err)
+	}
 	parts, err := shellwords.Parse(line)
 	if err != nil {
 		return fmt.Errorf("could not parse exec '%s'", line)
@@ -160,6 +174,12 @@ func runExec(line string, args []string, vars map[string]string) error {
 func varsToList(envs map[string]string) []string {
 	var list []string
 	for k, v := range envs {
+		// TODO: ugly since it assumes that mixins always are arrays
+		if strings.Contains(k, "MIXIN") {
+			// set the variable as an array
+			list = append(list, fmt.Sprintf("%s=(%s)", k, v))
+			continue
+		}
 		list = append(list, fmt.Sprintf("%s=%s", k, v))
 	}
 	return list

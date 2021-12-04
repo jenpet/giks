@@ -8,15 +8,16 @@ import (
 	"strings"
 )
 
-var mixins = map[string]mixinFunc{
-	"MODIFIED_FILES": mixinModifiedFiles,
-	"STAGED_FILES":   mixinStagedFiles,
+var mixins = []mixinFunc{
+	mixinModifiedFiles,
+	mixinStagedFiles,
+	mixinHeadFiles,
 }
 
 func ApplyMixins(dir string, vars map[string]string) {
 	for n, m := range mixins {
 		if err := m(dir, vars); err != nil {
-			log.Warnf("Failed applying git mixin '%s'. Error: %s", n, err)
+			log.Warnf("Failed applying git mixin no. %d. Error: %+v", n, err)
 		}
 	}
 }
@@ -28,7 +29,7 @@ var mixinModifiedFiles = func(dir string, vars map[string]string) error {
 	if err != nil {
 		return err
 	}
-	vars["GIKS_MIXIN_MODIFIED_FILES"] = strings.Replace(out, "\n", " ", -1)
+	vars["GIKS_MIXIN_MODIFIED_FILES"] = strings.TrimSpace(strings.Replace(out, "\n", " ", -1))
 	return nil
 }
 
@@ -38,6 +39,15 @@ var mixinStagedFiles = func(dir string, vars map[string]string) error {
 		return err
 	}
 	vars["GIKS_MIXIN_STAGED_FILES"] = strings.Replace(out, "\n", " ", -1)
+	return nil
+}
+
+var mixinHeadFiles = func(dir string, vars map[string]string) error {
+	out, err := execGitCommand(dir, "diff", "--name-only", "HEAD", "HEAD~")
+	if err != nil {
+		return err
+	}
+	vars["GIKS_MIXIN_HEAD_FILES"] = strings.Replace(out, "\n", " ", -1)
 	return nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"giks/log"
 	"os/exec"
 	"strings"
 )
@@ -20,7 +21,7 @@ func (fw FileWatcher) ID() string {
 	return "file-watcher"
 }
 
-func (fw FileWatcher) Run(hook string, vars map[string]string, args []string) (bool, error) {
+func (fw FileWatcher) Run(workingDir string, hook string, vars map[string]string, args []string) (bool, error) {
 	pattern := ""
 	err := extractVar(varFilePattern, vars, func(val string) error {
 		pattern = val
@@ -42,6 +43,7 @@ func (fw FileWatcher) Run(hook string, vars map[string]string, args []string) (b
 			cargs = strings.Join(parts[1:], " ")
 		}
 		cmd = exec.Command(command, cargs)
+		cmd.Dir = workingDir
 		return nil
 	}, true)
 
@@ -56,6 +58,7 @@ func (fw FileWatcher) Run(hook string, vars map[string]string, args []string) (b
 	switch hook {
 	case "pre-commit":
 		if singleFileMatchesPattern(files, pattern) {
+			log.Infof("[%s]: changes detected. Running '%s'...", fw.ID(), strings.Join(cmd.Args, " "))
 			var buf bytes.Buffer
 			cmd.Stdout = &buf
 			cmd.Stderr = &buf

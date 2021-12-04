@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"giks/log"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -12,6 +13,7 @@ import (
 var List = []Plugin{
 	StringValidator{},
 	FileWatcher{},
+	ListComparator{},
 }
 
 // Get returns a plugin for the given name (identifier). In case none was found an error is returned.
@@ -26,7 +28,7 @@ func Get(name string) (Plugin, error) {
 
 // Plugin has to be implemented by all built-in plugins in order to be triggered correctly by the giks hook executor
 type Plugin interface {
-	Run(hook string, vars map[string]string, args []string) (bool, error)
+	Run(workingDir string, hook string, vars map[string]string, args []string) (bool, error)
 	ID() string
 }
 
@@ -44,6 +46,25 @@ func extractVar(key string, vars map[string]string, parseFunc func(val string) e
 		return fmt.Errorf("variable '%s' is required but not set", key)
 	}
 	return nil
+}
+
+func extractStringVar(key string, vars map[string]string, required bool) (string, error) {
+	var str string
+	err := extractVar(key, vars, func(val string) error {
+		str = val
+		return nil
+	}, required)
+	return str, err
+}
+
+func extractBoolVar(key string, vars map[string]string, required bool) (bool, error) {
+	var b bool
+	err := extractVar(key, vars, func(val string) error {
+		parsed, err := strconv.ParseBool(val)
+		b = parsed
+		return err
+	}, required)
+	return b, err
 }
 
 func matchString(input, pattern string) error {

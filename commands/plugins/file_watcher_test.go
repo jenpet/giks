@@ -61,7 +61,7 @@ func TestFileWatcher(t *testing.T) {
 				"FILE_WATCHER_COMMAND":    "touch " + file,
 				"FILE_WATCHER_FILES_LIST": tt.files,
 			}
-			ok, err := fw.Run("pre-commit", vars, nil)
+			ok, err := fw.Run("", "pre-commit", vars, nil)
 			assert.Equal(t, tt.okExpected, ok, "expected bool does not match executed plugin result")
 			assert.Equal(t, tt.errExpected, err != nil, "error expectation and result does not match")
 			fh, err := os.Stat(file)

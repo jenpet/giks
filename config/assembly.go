@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -21,6 +22,7 @@ const defaultGiksConfigFilename = "giks.yml"
 func AssembleConfig(ga args.GiksArgs) Config {
 	cfg := parseConfigFile(ga.ConfigFile())
 	cfg.GitDir = absoluteGitDirectory(ga.GitDir())
+	cfg.WorkingDir = path.Dir(cfg.GitDir)
 	cfg.Binary = absoluteBinaryPath(ga.Binary())
 	return cfg
 }
