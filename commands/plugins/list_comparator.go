@@ -8,8 +8,8 @@ import (
 const (
 	varListA                     = "LIST_COMPARATOR_LIST_A"
 	varListB                     = "LIST_COMPARATOR_LIST_B"
-	varListOperator              = "LIST_COMPARATOR_OPERATOR"
-	varListComparatorFailOnMatch = "LIST_COMPARATOR_FAIL_ON_SUCCESS"
+	varListOperator              = "LIST_COMPARATOR_OPERATION"
+	varListComparatorFailOnMatch = "LIST_COMPARATOR_FAIL_ON_MATCH"
 )
 
 var operations = []string{"intersect"}
@@ -21,13 +21,13 @@ func (lc ListComparator) ID() string {
 }
 
 func (lc ListComparator) Run(workingDir string, hook string, vars map[string]string, args []string) (bool, error) {
-	listAStr, err := extractStringVar(varListA, vars, true)
+	listAStr, err := extractStringVar(varListA, vars, false)
 	if err != nil {
 		return false, err
 	}
 	listA := strings.Split(listAStr, " ")
 
-	listBStr, err := extractStringVar(varListB, vars, true)
+	listBStr, err := extractStringVar(varListB, vars, false)
 	if err != nil {
 		return false, err
 	}
@@ -45,24 +45,25 @@ func (lc ListComparator) Run(workingDir string, hook string, vars map[string]str
 	if err != nil {
 		return false, err
 	}
-	if compare(listA, listB, operation) {
+	if diff := compare(listA, listB, operation); len(diff) > 0 {
 		if failOnMatch {
-			return true, fmt.Errorf("matched lists with operation '%s'", operation)
+			return false, fmt.Errorf("elements which matched the comparison '%s'", strings.Join(diff, ","))
 		}
 	}
 	return true, nil
 }
 
-func compare(a, b []string, operation string) bool {
+func compare(a, b []string, operation string) []string {
+	var diff []string
 	switch operation {
 	case "intersect":
 		for _, el := range a {
 			if contains(b, el) {
-				return true
+				diff = append(diff, el)
 			}
 		}
 	}
-	return false
+	return diff
 }
 
 func contains(hs []string, n string) bool {

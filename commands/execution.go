@@ -136,7 +136,14 @@ func executePlugin(workingDir string, hook string, pCfg config.PluginStep, args 
 	}
 	exit, err := p.Run(workingDir, hook, vars, args)
 	if err != nil && exit {
-		log.Errorf("failed executing plugin '%s'. Error: %+v", pCfg.Name, err)
+		msg := pCfg.ErrorMessage
+		if msg == "" {
+			msg = fmt.Sprintf("failed executing plugin '%s'", pCfg.Name)
+		}
+		log.Errorf("%s. Error: %+v", msg, err)
+	}
+	if pCfg.SuccessMessage != "" {
+		log.Info(pCfg.SuccessMessage)
 	}
 	return err
 }

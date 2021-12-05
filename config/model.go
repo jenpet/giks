@@ -172,8 +172,10 @@ func (s Step) validate() error {
 }
 
 type PluginStep struct {
-	Name string            `yaml:"name"`
-	Vars map[string]string `yaml:"vars"`
+	Name           string            `yaml:"name"`
+	SuccessMessage string            `yaml:"success_message"`
+	ErrorMessage   string            `yaml:"error_message"`
+	Vars           map[string]string `yaml:"vars"`
 }
 
 func (ps PluginStep) Validate() error {
