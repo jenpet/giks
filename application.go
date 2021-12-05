@@ -1,9 +1,9 @@
 package main
 
 import (
-	"giks/args"
-	"giks/commands"
-	"giks/config"
+	"github.com/jenpet/giks/args"
+	"github.com/jenpet/giks/commands"
+	"github.com/jenpet/giks/config"
 	"os"
 )
 

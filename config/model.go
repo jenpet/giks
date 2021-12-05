@@ -3,8 +3,8 @@ package config
 import (
 	"errors"
 	"fmt"
-	"giks/git"
-	"giks/log"
+	"github.com/jenpet/giks/git"
+	"github.com/jenpet/giks/log"
 	"strings"
 )
 

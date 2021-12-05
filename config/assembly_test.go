@@ -1,8 +1,8 @@
 package config
 
 import (
-	"giks/args"
-	"giks/test/gittest"
+	"github.com/jenpet/giks/args"
+	"github.com/jenpet/giks/test/gittest"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"os/exec"

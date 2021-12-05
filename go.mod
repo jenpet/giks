@@ -1,4 +1,4 @@
-module giks
+module github.com/jenpet/giks
 
 go 1.16
 

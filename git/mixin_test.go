@@ -1,7 +1,7 @@
 package git
 
 import (
-	"giks/test/gittest"
+	"github.com/jenpet/giks/test/gittest"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"

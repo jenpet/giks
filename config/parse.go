@@ -3,7 +3,7 @@ package config
 import (
 	"bytes"
 	"fmt"
-	"giks/log"
+	"github.com/jenpet/giks/log"
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"

@@ -3,7 +3,7 @@ package args
 
 import (
 	"fmt"
-	"giks/git"
+	"github.com/jenpet/giks/git"
 	"strings"
 )
 

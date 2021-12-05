@@ -2,10 +2,10 @@ package commands
 
 import (
 	"fmt"
-	gargs "giks/args"
-	"giks/cli"
-	"giks/config"
-	"giks/log"
+	gargs "github.com/jenpet/giks/args"
+	"github.com/jenpet/giks/cli"
+	"github.com/jenpet/giks/config"
+	"github.com/jenpet/giks/log"
 )
 
 func Process(cfg config.Config, gargs gargs.GiksArgs) {

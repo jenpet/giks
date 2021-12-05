@@ -3,8 +3,8 @@ package config
 import (
 	"bytes"
 	"errors"
-	"giks/args"
-	"giks/log"
+	"github.com/jenpet/giks/args"
+	"github.com/jenpet/giks/log"
 	"os"
 	"os/exec"
 	"os/user"

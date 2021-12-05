@@ -3,7 +3,7 @@ package git
 import (
 	"bytes"
 	"fmt"
-	"giks/log"
+	"github.com/jenpet/giks/log"
 	"os/exec"
 	"strings"
 )

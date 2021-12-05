@@ -2,9 +2,9 @@ package commands
 
 import (
 	"flag"
-	gargs "giks/args"
-	"giks/cli"
-	"giks/config"
+	gargs "github.com/jenpet/giks/args"
+	"github.com/jenpet/giks/cli"
+	"github.com/jenpet/giks/config"
 	"strings"
 	"text/template"
 )

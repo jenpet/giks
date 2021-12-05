@@ -3,7 +3,7 @@ package plugins
 import (
 	"errors"
 	"fmt"
-	"giks/log"
+	"github.com/jenpet/giks/log"
 	"regexp"
 	"strconv"
 	"strings"
