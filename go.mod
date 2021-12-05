@@ -1,6 +1,6 @@
 module giks
 
-go 1.16
+go 1.15
 
 require (
 	github.com/kr/text v0.2.0 // indirect
