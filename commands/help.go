@@ -13,7 +13,28 @@ var helpCommand = flag.NewFlagSet("help", flag.ExitOnError)
 var debugAttr = helpCommand.Bool("debug", false, "show additional debug information")
 
 var helpTemplateString = `
-HALP TEXT
+
+Usage: giks COMMAND [SUBCOMMAND] [OPTIONS]
+
+Global Options:
+
+--config		Path to the giks configuration (default: ${PWD}/giks.yml)
+--git-dir		Path to the Git directory which should be managed by giks (default: ${PWD}/.git)
+
+
+Commands:
+
+install [HOOK] Installs a given hook based on the configuration into the target directory. 
+	If no hook is provided it will install all enabled hooks of the configuration.
+
+uninstall [HOOK] Removes a given hook based on the configuration from the target directory. 
+	If no hook is provided all hooks will be removed.
+
+exec HOOK Executes a given hook according to the configuration provided.
+
+show [HOOK] [--all] Displays detailed information about the used configuration (i.e. list of hooks). 
+	If a hook is provided it will show the details for the specific hook. Adding the --all flag also lists disabled hooks.
+
 {{ if .debug }}
 Binary:		{{ .debug.binary }}
 Config:		{{ .debug.config }}

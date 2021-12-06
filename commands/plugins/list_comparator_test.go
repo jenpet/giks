@@ -12,7 +12,7 @@ func TestListComparator(t *testing.T) {
 		listB       string
 		operation   string
 		failOnMatch string
-		okExpected bool
+		okExpected  bool
 		errExpected bool
 	}{
 		{
@@ -52,13 +52,13 @@ func TestListComparator(t *testing.T) {
 			true,
 		},
 	}
-	lc,_ := Get("list-comparator")
+	lc, _ := Get("list-comparator")
 	for _, tt := range listComparatorTests {
 		t.Run(tt.name, func(t *testing.T) {
-			vars := map[string]string {
-				"LIST_COMPARATOR_LIST_A": tt.listA,
-				"LIST_COMPARATOR_LIST_B": tt.listB,
-				"LIST_COMPARATOR_OPERATION": tt.operation,
+			vars := map[string]string{
+				"LIST_COMPARATOR_LIST_A":        tt.listA,
+				"LIST_COMPARATOR_LIST_B":        tt.listB,
+				"LIST_COMPARATOR_OPERATION":     tt.operation,
 				"LIST_COMPARATOR_FAIL_ON_MATCH": tt.failOnMatch,
 			}
 			ok, err := lc.Run("", "pre-commit", vars, nil)

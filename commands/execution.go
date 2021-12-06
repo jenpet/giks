@@ -2,7 +2,6 @@ package commands
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	gargs "github.com/jenpet/giks/args"
 	"github.com/jenpet/giks/commands/plugins"
@@ -17,9 +16,6 @@ import (
 	"syscall"
 	"text/template"
 )
-
-var listCommand = flag.NewFlagSet("list", flag.ExitOnError)
-var listAllAttr = listCommand.Bool("all", false, "include disabled hooks")
 
 var listTemplateString = `
 HOOK				| ENABLED				| STEPS

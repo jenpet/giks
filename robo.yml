@@ -6,7 +6,7 @@ build:
     # default platform
     platforms=("darwin/amd64")
     if [ "${1}" = "all" ]; then
-      platforms=({{ .build.platforms }})
+      platforms=({{ .platforms }})
     elif [ ! -z "${1}" ]; then
       platforms=("${1}")
     fi
@@ -19,14 +19,18 @@ build:
       fi
       os=${platform_split[0]}
       arch=${platform_split[1]}
-      binary="{{ .build.binary }}_${os}_${arch}"
+      binary="{{ .binary }}_${os}_${arch}"
       # append '.exe' suffix in case it should be built for windows
       if [ "${os}" = "windows" ]; then
         binary+=".exe"
       fi
 
       echo "Building for operating system '${os}' and arch '${arch}' into binary '${binary}'"
-      GOARCH="${arch}" GOOS=${os} CGO_ENABLED=0 go build -ldflags='-w -s -extldflags "-static"' -a \
+      LDFLAGS=(
+        "-X '{{.package}}/meta.CommitHashArg={{ .hash }}'"
+        "-X '{{.package}}/meta.VersionArg={{ .version }}'"
+      )
+      GOARCH="${arch}" GOOS=${os} CGO_ENABLED=0 go build -ldflags="-w -s ${LDFLAGS[*]}" -a \
         -o {{ .robo.path }}/${binary} . && \
         chmod a+rwx {{ .robo.path }}/${binary}
     done
@@ -56,8 +60,9 @@ pretty:
     fi
 
 variables:
-  binary: build/dist/giks
   rcmd: robo -c {{ .robo.file }}
-  build:
-    binary: build/dist/giks
-    platforms: darwin/amd64 freebsd/386 freebsd/amd64 freebsd/arm linux/386 linux/amd64 linux/arm linux/mips linux/mips64 linux/mips64le linux/mipsle linux/s390x netbsd/386 netbsd/amd64 netbsd/arm openbsd/386 openbsd/amd64 windows/386 windows/amd64
+  package: github.com/jenpet/giks
+  hash: $(git rev-parse --short HEAD)
+  version: $(git tag --points-at HEAD)
+  binary: build/dist/giks
+  platforms: darwin/amd64 freebsd/386 freebsd/amd64 freebsd/arm linux/386 linux/amd64 linux/arm linux/mips linux/mips64 linux/mips64le linux/mipsle linux/s390x netbsd/386 netbsd/amd64 netbsd/arm openbsd/386 openbsd/amd64 windows/386 windows/amd64
