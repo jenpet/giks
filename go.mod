@@ -1,6 +1,6 @@
 module github.com/jenpet/giks
 
-go 1.16
+go 1.15
 
 require (
 	github.com/mattn/go-shellwords v1.0.12
