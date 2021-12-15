@@ -1,6 +1,15 @@
 version: 1
 
 hooks:
+  commit-msg:
+    enabled: true
+    steps:
+      - plugin:
+          name: 'string-validator'
+          error_message: 'Provide a descriptive commit message. Empty ones are not allowed.'
+          vars:
+            FAIL_ON_MISMATCH: 'true'
+            VALIDATION_PATTERN: '.*\S.*'
   pre-commit:
     enabled: true
     steps:

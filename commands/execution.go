@@ -57,6 +57,7 @@ func init() {
 
 func executeHook(cfg config.Config, gargs gargs.GiksArgs) error {
 	h := cfg.Hook(gargs.Hook())
+
 	if !h.Enabled {
 		return fmt.Errorf("hook '%s' is not enabled", h.Name)
 	}
@@ -66,7 +67,7 @@ func executeHook(cfg config.Config, gargs gargs.GiksArgs) error {
 		// due to previous steps
 		vars := giksVars(cfg, gargs)
 		log.Debugf("Performing step '%s/%d' with variables '%s'", h.Name, i+1, strings.Join(varsToList(vars), ","))
-		if err := executeStep(cfg.WorkingDir, h, step, gargs, vars); err != nil {
+		if err := executeStep(cfg.WorkingDir, h, step, gargs.Args(false), vars); err != nil {
 			if errors.IsWarningError(err) {
 				log.Warnf("failed executing step no. %d. Error: %s", i+1, err)
 				continue

@@ -3,7 +3,6 @@ package plugins
 import (
 	"fmt"
 	"os"
-	"strconv"
 )
 
 const (
@@ -18,22 +17,23 @@ func (sv StringValidator) ID() string {
 }
 
 func (sv StringValidator) Run(workingDir string, hook string, vars map[string]string, args []string) (bool, error) {
-	failOnMismatch := false
-	err := extractVar(varFailOnMismatch, vars, func(val string) error {
-		var err error
-		failOnMismatch, err = strconv.ParseBool(val)
-		return err
-	}, false)
+	failOnMismatch, err := extractBoolVar(varFailOnMismatch, vars, false)
 	if err != nil {
-		return false, err
+		return true, err
+	}
+
+	pat, err := extractStringVar(varValidationPattern, vars, true)
+	if err != nil {
+		return true, err
 	}
 	switch hook {
+	// TODO: need re-work. In the current setup it is only usable for a commit-msg hook
 	case "commit-msg":
 		b, err := os.ReadFile(args[0])
 		if err != nil {
 			return false, fmt.Errorf("could not read file '%s'", err)
 		}
-		return failOnMismatch, matchString(string(b), vars[varValidationPattern])
+		return failOnMismatch, matchString(string(b), pat)
 	default:
 		return hookUnsupported(hook, sv.ID())
 	}

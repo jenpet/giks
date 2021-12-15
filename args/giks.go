@@ -27,15 +27,6 @@ func (ga GiksArgs) Command() string {
 	return ga.sanitizeArgs()[1]
 }
 
-func (ga GiksArgs) SubCommand() string {
-	// if there are not enough arguments, the subcommand argument is a flag or a valid git hook treat consider the subcommand absent
-	sargs := ga.sanitizeArgs()
-	if len(sargs) < 3 || isFlag(sargs[2]) || git.IsValidHook(sargs[2]) {
-		return ""
-	}
-	return ga.sanitizeArgs()[2]
-}
-
 func (ga GiksArgs) Hook() string {
 	for _, arg := range ga.sanitizeArgs() {
 		if git.IsValidHook(arg) {
@@ -82,12 +73,26 @@ func (ga GiksArgs) globalFlag(flag string) (string, bool) {
 	return "", false
 }
 
-func (ga GiksArgs) Args() []string {
+// Args returns all arguments relevant for a command. Arguments can be passed arguments for a giks command
+// as well as args for an execution of a hook.
+func (ga GiksArgs) Args(flags bool) []string {
 	args := []string{}
-	for _, arg := range ga.sanitizeArgs() {
-		if isFlag(arg) {
-			args = append(args, arg)
+	// remove global flags first
+	sargs := ga.sanitizeArgs()
+	// start from the third item on assuming the first and the second are binary and command
+	if len(sargs) <= 2 {
+		return args
+	}
+	for _, arg := range ga.sanitizeArgs()[2:] {
+		// skip flags except desired
+		if !flags && isFlag(arg) {
+			continue
 		}
+		// skip valid hooks
+		if git.IsValidHook(arg) {
+			continue
+		}
+		args = append(args, arg)
 	}
 	return args
 }

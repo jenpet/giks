@@ -12,15 +12,13 @@ func TestGiksArgs_whenInputsVary_shouldResultInNoError(t *testing.T) {
 		input          []string
 		expectedBinary string
 		expectedCmd    string
-		expectedSubCmd string
 		expectedHook   string
 		expectedArgs   []string
 	}{
 		{
 			"full-blown input",
-			toArgs("giks hooks exec commit-msg --all=true"),
+			toArgs("giks exec commit-msg --all=true"),
 			"giks",
-			"hooks",
 			"exec",
 			"commit-msg",
 			toArgs("--all=true"),
@@ -31,14 +29,12 @@ func TestGiksArgs_whenInputsVary_shouldResultInNoError(t *testing.T) {
 			"giks",
 			"hooks",
 			"",
-			"",
 			[]string{},
 		},
 		{
 			"missing command input",
 			toArgs("giks"),
 			"giks",
-			"",
 			"",
 			"",
 			[]string{},
@@ -48,7 +44,6 @@ func TestGiksArgs_whenInputsVary_shouldResultInNoError(t *testing.T) {
 			toArgs("giks exec commit-msg --all=true"),
 			"giks",
 			"exec",
-			"",
 			"commit-msg",
 			toArgs("--all=true"),
 		},
@@ -58,12 +53,11 @@ func TestGiksArgs_whenInputsVary_shouldResultInNoError(t *testing.T) {
 			var ga GiksArgs = tt.input
 			assert.Equal(t, tt.expectedBinary, ga.Binary(), "expected binary and resulting binary do not match")
 			assert.Equal(t, tt.expectedCmd, ga.Command(), "expected command and resulting command do not match")
-			assert.Equal(t, tt.expectedSubCmd, ga.SubCommand(), "expected sub-command and resulting sub-command do not match")
 			assert.Equal(t, tt.expectedHook, ga.Hook(), "expected hook and resulting hook do not match")
 			if tt.expectedHook != "" {
 				assert.True(t, ga.HasHook(), "expected hook to be present")
 			}
-			assert.Equal(t, tt.expectedArgs, ga.Args(), "expected args and resulting args do not match")
+			assert.Equal(t, tt.expectedArgs, ga.Args(true), "expected args and resulting args do not match")
 		})
 	}
 }
@@ -74,9 +68,9 @@ func TestGiksArgs_whenInputHasGlobalFlags_shouldSanitizeAccordingly(t *testing.T
 	assert.Equal(t, "giks_alternative.yml", ga.ConfigFile(), "expected config file and resulting config file does not match")
 	assert.Equal(t, "/foo/bar/.git/", ga.GitDir(), "expected git dir and resulting git dir does not match")
 	assert.True(t, ga.Debug(), "expected debug flag to be true")
-	assert.NotContains(t, ga.Args(), "--config=giks_alternative.yml", "giks args should not contain global config flags")
-	assert.NotContains(t, ga.Args(), "--git-dir=/foo/bar/.git/", "giks args should not contain global config flags")
-	assert.NotContains(t, ga.Args(), "--debug", "giks args should not contain global config flags")
+	assert.NotContains(t, ga.Args(true), "--config=giks_alternative.yml", "giks args should not contain global config flags")
+	assert.NotContains(t, ga.Args(true), "--git-dir=/foo/bar/.git/", "giks args should not contain global config flags")
+	assert.NotContains(t, ga.Args(true), "--debug", "giks args should not contain global config flags")
 	assert.Equal(t, input, ga.Raw(), "giks args should still contain raw arguments")
 }
 

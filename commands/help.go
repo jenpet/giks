@@ -54,7 +54,7 @@ func printHelp(cfg config.Config, gargs gargs.GiksArgs) {
 		"binary": cfg.Binary,
 		"config": cfg.ConfigFile,
 		"gitdir": cfg.GitDir,
-		"args":   strings.Join(gargs.Args(), ""),
+		"args":   strings.Join(gargs.Args(true), ""),
 	}
 	var data map[string]interface{}
 	if gargs.Debug() {

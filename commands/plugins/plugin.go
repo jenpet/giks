@@ -28,7 +28,14 @@ func Get(name string) (Plugin, error) {
 
 // Plugin has to be implemented by all built-in plugins in order to be triggered correctly by the giks hook executor
 type Plugin interface {
+	// Run executes the plugin for a given workingDir and hook. The vars will contain all variables
+	// provided by giks, args are the arguments that were passed for the hook execution.
+	//
+	// The returned boolean indicates whether giks should exit after running the plugin providing relying on additional
+	// information given by the error.
 	Run(workingDir string, hook string, vars map[string]string, args []string) (bool, error)
+
+	// ID returns the name / identifier of the plugin which can be used within the configuration file
 	ID() string
 }
 

@@ -15,7 +15,7 @@ var showAllAttr = showCommand.Bool("all", false, "include disabled hooks")
 
 func Process(cfg config.Config, gargs gargs.GiksArgs) {
 	// actual array of arguments without the binary itself the command and subcommand
-	args := gargs.Args()
+	args := gargs.Args(true)
 	switch gargs.Command() {
 	case "install":
 		if gargs.HasHook() {
