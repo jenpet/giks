@@ -1,16 +1,12 @@
 package commands
 
 import (
-	"flag"
 	gargs "github.com/jenpet/giks/args"
 	"github.com/jenpet/giks/cli"
 	"github.com/jenpet/giks/config"
 	"strings"
 	"text/template"
 )
-
-var helpCommand = flag.NewFlagSet("help", flag.ExitOnError)
-var debugAttr = helpCommand.Bool("debug", false, "show additional debug information")
 
 var helpTemplateString = `
 
@@ -61,8 +57,7 @@ func printHelp(cfg config.Config, gargs gargs.GiksArgs) {
 		"args":   strings.Join(gargs.Args(), ""),
 	}
 	var data map[string]interface{}
-	_ = helpCommand.Parse(gargs.Args())
-	if helpCommand.Parsed() && *debugAttr {
+	if gargs.Debug() {
 		data = map[string]interface{}{"debug": debug}
 	}
 	cli.PrintTemplate(helpTemplate, data)

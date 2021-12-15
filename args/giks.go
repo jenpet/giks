@@ -2,7 +2,6 @@
 package args
 
 import (
-	"fmt"
 	"github.com/jenpet/giks/git"
 	"strings"
 )
@@ -10,9 +9,10 @@ import (
 const (
 	keyGlobalConfigFlag = "--config"
 	keyGlobalGitDirFlag = "--git-dir"
+	keyGlobalDebugFlag = "--debug"
 )
 
-var globalFlags = []string{keyGlobalGitDirFlag, keyGlobalConfigFlag}
+var globalFlags = []string{keyGlobalGitDirFlag, keyGlobalConfigFlag, keyGlobalDebugFlag}
 
 type GiksArgs []string
 
@@ -50,20 +50,36 @@ func (ga GiksArgs) HasHook() bool {
 }
 
 func (ga GiksArgs) ConfigFile() string {
-	return ga.getGlobalFlag(keyGlobalConfigFlag)
+	v, _ := ga.globalFlag(keyGlobalConfigFlag)
+	return v
 }
 
 func (ga GiksArgs) GitDir() string {
-	return ga.getGlobalFlag(keyGlobalGitDirFlag)
+	v, _ := ga.globalFlag(keyGlobalGitDirFlag)
+	return v
 }
 
-func (ga GiksArgs) getGlobalFlag(flag string) string {
+func (ga GiksArgs) Debug() bool {
+	_, ok := ga.globalFlag(keyGlobalDebugFlag)
+	if !ok {
+		return false
+	}
+	// debug flag does not need a value
+	return true
+}
+
+func (ga GiksArgs) globalFlag(flag string) (string, bool) {
 	for _, arg := range ga {
-		if fileArg := strings.Split(arg, fmt.Sprintf("%s=", flag)); len(fileArg) == 2 {
-			return fileArg[1]
+		// flag is set in general
+		if fileArg := strings.Split(arg, flag); len(fileArg) == 2 {
+			// flag is set with an actual value
+			if val := strings.Split(fileArg[1], "="); len(val) == 2 {
+				return val[1], true
+			}
+			return "", true
 		}
 	}
-	return ""
+	return "", false
 }
 
 func (ga GiksArgs) Args() []string {

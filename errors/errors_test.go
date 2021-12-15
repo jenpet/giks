@@ -7,8 +7,8 @@ import (
 )
 
 func TestIsExitErrors(t *testing.T) {
-	exitErrorTests := []struct{
-		name string
+	exitErrorTests := []struct {
+		name           string
 		inErr          error
 		expectedResult bool
 	}{
@@ -28,7 +28,7 @@ func TestIsExitErrors(t *testing.T) {
 			false,
 		},
 	}
-	for _,tt := range exitErrorTests {
+	for _, tt := range exitErrorTests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, IsWarningError(tt.inErr), "expected result does not match input")
 		})

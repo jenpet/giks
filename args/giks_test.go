@@ -69,13 +69,57 @@ func TestGiksArgs_whenInputsVary_shouldResultInNoError(t *testing.T) {
 }
 
 func TestGiksArgs_whenInputHasGlobalFlags_shouldSanitizeAccordingly(t *testing.T) {
-	input := []string{"hooks", "exec", "--config=giks_alternative.yml", "--git-dir=/foo/bar/.git/", "commit-msg", "FEAT: Hallo"}
+	input := []string{"hooks", "exec", "--config=giks_alternative.yml", "--git-dir=/foo/bar/.git/", "--debug", "commit-msg", "FEAT: Hallo"}
 	var ga GiksArgs = input
 	assert.Equal(t, "giks_alternative.yml", ga.ConfigFile(), "expected config file and resulting config file does not match")
 	assert.Equal(t, "/foo/bar/.git/", ga.GitDir(), "expected git dir and resulting git dir does not match")
+	assert.True(t, ga.Debug(), "expected debug flag to be true")
 	assert.NotContains(t, ga.Args(), "--config=giks_alternative.yml", "giks args should not contain global config flags")
 	assert.NotContains(t, ga.Args(), "--git-dir=/foo/bar/.git/", "giks args should not contain global config flags")
+	assert.NotContains(t, ga.Args(), "--debug", "giks args should not contain global config flags")
 	assert.Equal(t, input, ga.Raw(), "giks args should still contain raw arguments")
+}
+
+func TestGiksArgsGlobalFlag(t *testing.T) {
+	globalFlagTests := []struct {
+		name string
+		inArg string
+		expectedOk bool
+		expectedVal string
+	}{
+		{
+			"regular",
+			"--git-dir=/foo/bar",
+			true,
+			"/foo/bar",
+		},
+		{
+			"without value",
+			"--git-dir",
+			true,
+			"",
+		},
+		{
+			"empty value",
+			"--git-dir=",
+			true,
+			"",
+		},
+		{
+			"absent",
+			"",
+			false,
+			"",
+		},
+	}
+	for _, tt := range globalFlagTests {
+		t.Run(tt.name, func(t *testing.T) {
+			var ga GiksArgs = []string{tt.inArg}
+			val, ok := ga.globalFlag(keyGlobalGitDirFlag)
+			assert.Equal(t, tt.expectedVal, val, "expected and returned value do not match")
+			assert.Equal(t, tt.expectedOk, ok, "expected and returned ok do not match")
+		})
+	}
 }
 
 func toArgs(s string) []string {

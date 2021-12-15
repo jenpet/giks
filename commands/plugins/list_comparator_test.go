@@ -7,10 +7,10 @@ import (
 
 func TestListComparator(t *testing.T) {
 	listComparatorTests := []struct {
-		name        string
-		listA       string
-		listB       string
-		operation   string
+		name         string
+		listA        string
+		listB        string
+		operation    string
 		failOnMatch  string
 		exitExpected bool
 		errExpected  bool
