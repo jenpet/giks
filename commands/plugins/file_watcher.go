@@ -3,7 +3,6 @@ package plugins
 import (
 	"bytes"
 	"fmt"
-	"github.com/jenpet/giks/log"
 	"os/exec"
 	"strings"
 )
@@ -39,7 +38,6 @@ func (fw FileWatcher) Run(workingDir string, hook string, vars map[string]string
 	}
 	files := strings.Split(filesString, " ")
 	if singleFileMatchesPattern(files, pattern) {
-		log.Infof("[%s]: changes detected. Running '%s'...", fw.ID(), strings.Join(cmd.Args, " "))
 		var buf bytes.Buffer
 		cmd.Stdout = &buf
 		cmd.Stderr = &buf

@@ -1,0 +1,20 @@
+version: 1
+
+hooks:
+  pre-push:
+    enabled: true
+    steps:
+      - plugin:
+          name: 'file-watcher'
+          vars:
+            FILE_WATCHER_PATTERN: '.*.go'
+            FILE_WATCHER_COMMAND: 'robo pretty'
+            FILE_WATCHER_FILES_LIST: 'GIKS_MIXIN_STAGED_FILES'
+      - plugin:
+          name: 'list-comparator'
+          error_message: 'Staged and modified files contain at least one identical file after prettifying it'
+          vars:
+            LIST_COMPARATOR_LIST_A: 'GIKS_MIXIN_STAGED_FILES'
+            LIST_COMPARATOR_LIST_B: 'GIKS_MIXIN_MODIFIED_FILES'
+            LIST_COMPARATOR_OPERATION: 'intersect'
+            LIST_COMPARATOR_FAIL_ON_MATCH: 'true'
