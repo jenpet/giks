@@ -23,34 +23,35 @@ func (lc ListComparator) ID() string {
 func (lc ListComparator) Run(workingDir string, hook string, vars map[string]string, args []string) (bool, error) {
 	listAStr, err := extractStringVar(varListA, vars, false)
 	if err != nil {
-		return false, err
+		return true, err
 	}
-	listA := strings.Split(listAStr, " ")
 
 	listBStr, err := extractStringVar(varListB, vars, false)
 	if err != nil {
-		return false, err
+		return true, err
 	}
-	listB := strings.Split(listBStr, " ")
+	listA := strings.Split(strings.TrimSpace(listAStr), " ")
+	listB := strings.Split(strings.TrimSpace(listBStr), " ")
+	if listA[0] == "" || listB[0] == "" {
+		return false, nil
+	}
 
 	operation, err := extractStringVar(varListOperator, vars, true)
 	if err != nil {
-		return false, err
+		return true, err
 	}
 	if !contains(operations, operation) {
-		return false, fmt.Errorf("list-comparator does not support operation '%s'", operation)
+		return true, fmt.Errorf("list-comparator does not support operation '%s'", operation)
 	}
 
 	failOnMatch, err := extractBoolVar(varListComparatorFailOnMatch, vars, false)
 	if err != nil {
-		return false, err
+		return true, err
 	}
 	if diff := compare(listA, listB, operation); len(diff) > 0 {
-		if failOnMatch {
-			return false, fmt.Errorf("elements which matched the comparison '%s'", strings.Join(diff, ","))
-		}
+		return failOnMatch, fmt.Errorf("elements which matched the comparison '%s'", strings.Join(diff, ","))
 	}
-	return true, nil
+	return false, nil
 }
 
 func compare(a, b []string, operation string) []string {

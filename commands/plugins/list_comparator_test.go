@@ -11,9 +11,9 @@ func TestListComparator(t *testing.T) {
 		listA       string
 		listB       string
 		operation   string
-		failOnMatch string
-		okExpected  bool
-		errExpected bool
+		failOnMatch  string
+		exitExpected bool
+		errExpected  bool
 	}{
 		{
 			"lists intersect fail",
@@ -21,7 +21,7 @@ func TestListComparator(t *testing.T) {
 			"c d e",
 			"intersect",
 			"true",
-			false,
+			true,
 			true,
 		},
 		{
@@ -30,8 +30,8 @@ func TestListComparator(t *testing.T) {
 			"c d e",
 			"intersect",
 			"false",
-			true,
 			false,
+			true,
 		},
 		{
 			"lists no intersection",
@@ -39,7 +39,7 @@ func TestListComparator(t *testing.T) {
 			"d e",
 			"intersect",
 			"true",
-			true,
+			false,
 			false,
 		},
 		{
@@ -48,8 +48,17 @@ func TestListComparator(t *testing.T) {
 			"d e",
 			"foo",
 			"true",
-			false,
 			true,
+			true,
+		},
+		{
+			"empty lists",
+			" ",
+			"    ",
+			"intersect",
+			"true",
+			false,
+			false,
 		},
 	}
 	lc, _ := Get("list-comparator")
@@ -62,7 +71,7 @@ func TestListComparator(t *testing.T) {
 				"LIST_COMPARATOR_FAIL_ON_MATCH": tt.failOnMatch,
 			}
 			ok, err := lc.Run("", "pre-commit", vars, nil)
-			assert.Equal(t, tt.okExpected, ok, "expected bool does not match executed plugin result")
+			assert.Equal(t, tt.exitExpected, ok, "expected bool does not match executed plugin result")
 			assert.Equal(t, tt.errExpected, err != nil, "error expectation and result does not match")
 		})
 	}

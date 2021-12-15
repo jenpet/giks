@@ -81,7 +81,7 @@ func matchString(input, pattern string) error {
 	return nil
 }
 
-func hookUnsupported(hook string) (bool, error) {
-	log.Warnf("hook '%s' not supported by string validator", hook)
+func hookUnsupported(hook string, plugin string) (bool, error) {
+	log.Warnf("hook '%s' not supported by plugin '%s'", hook, plugin)
 	return false, nil
 }

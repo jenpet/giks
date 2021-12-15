@@ -1,11 +1,11 @@
 package commands
 
 import (
-	"errors"
 	"fmt"
 	gargs "github.com/jenpet/giks/args"
 	"github.com/jenpet/giks/commands/plugins"
 	"github.com/jenpet/giks/config"
+	"github.com/jenpet/giks/errors"
 	"github.com/jenpet/giks/git"
 	"github.com/jenpet/giks/log"
 	"github.com/mattn/go-shellwords"
@@ -60,9 +60,15 @@ func executeHook(cfg config.Config, gargs gargs.GiksArgs) error {
 	if !h.Enabled {
 		return fmt.Errorf("hook '%s' is not enabled", h.Name)
 	}
-	vars := giksVars(cfg, gargs)
 	for i, step := range h.Steps {
+		// ensure that the variables are up-to-date for every step in case they changed
+		// due to previous steps
+		vars := giksVars(cfg, gargs)
 		if err := executeStep(cfg.WorkingDir, h, step, gargs, vars); err != nil {
+			if errors.IsWarningError(err) {
+				log.Warnf("failed executing step no. %d. Error: %s", i+1, err)
+				continue
+			}
 			return fmt.Errorf("failed executing step no. %d. Error: %s", i+1, err)
 		}
 	}
@@ -131,12 +137,19 @@ func executePlugin(workingDir string, hook string, pCfg config.PluginStep, args 
 		vars[k] = v
 	}
 	exit, err := p.Run(workingDir, hook, vars, args)
-	if err != nil && exit {
+	if err != nil {
+		// error message was provided by the plugin configuration use the provided one
 		msg := pCfg.ErrorMessage
+		// default error message with error
 		if msg == "" {
-			msg = fmt.Sprintf("failed executing plugin '%s'", pCfg.Name)
+			msg = fmt.Sprintf("failed executing plugin '%s': %+v", pCfg.Name, err)
 		}
-		log.Errorf("%s. Error: %+v", msg, err)
+		// return an error which forces no exit
+		if !exit {
+			return errors.NewWarningError(msg)
+		}
+		// error that forces an exit
+		return errors.New(msg)
 	}
 	if pCfg.SuccessMessage != "" {
 		log.Info(pCfg.SuccessMessage)

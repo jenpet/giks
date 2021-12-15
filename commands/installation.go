@@ -151,12 +151,23 @@ func hookFileContent(cfg config.Config, hookName string) string {
 func commandString(cfg config.Config, hookName string) (string, error) {
 	cmd := fmt.Sprintf("%s exec %s --config=%s", cfg.Binary, hookName, cfg.ConfigFile)
 	switch hookName {
-	case git.HookCommitMsg:
-		return fmt.Sprintf("%s ${1}", cmd), nil
-	case git.HookPreCommit:
+	case git.HookCommitMsg: // hooks with one parameter passed
+		return addArgumentToCommand(cmd, 1), nil
+	case git.HookPrePush, git.HookPreRebase: // hooks with two parameters passed
+		return addArgumentToCommand(cmd, 2), nil
+	case git.HookPrepareCommitMsg, git.HookUpdate:
+		return addArgumentToCommand(cmd, 3), nil
+	case git.HookPreCommit, git.HookPostUpdate, git.HookPreMergeCommit, git.HookPreReceive: // hooks without any parameters passed
 		return cmd, nil
 	}
 	return "", errors.New(fmt.Sprintf("installation with hook '%s' is not supported", hookName))
+}
+
+func addArgumentToCommand(cmd string, amount int) string {
+	for i := 0; i < amount; i++ {
+		cmd = fmt.Sprintf("%s ${%d}", cmd, i+1)
+	}
+	return cmd
 }
 
 func verifyUserConfirmation(msg string) {

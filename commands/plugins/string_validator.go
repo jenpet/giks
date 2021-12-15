@@ -35,6 +35,6 @@ func (sv StringValidator) Run(workingDir string, hook string, vars map[string]st
 		}
 		return failOnMismatch, matchString(string(b), vars[varValidationPattern])
 	default:
-		return hookUnsupported(hook)
+		return hookUnsupported(hook, sv.ID())
 	}
 }
