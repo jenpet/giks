@@ -82,9 +82,9 @@ func TestGiksArgs_whenInputHasGlobalFlags_shouldSanitizeAccordingly(t *testing.T
 
 func TestGiksArgsGlobalFlag(t *testing.T) {
 	globalFlagTests := []struct {
-		name string
-		inArg string
-		expectedOk bool
+		name        string
+		inArg       string
+		expectedOk  bool
 		expectedVal string
 	}{
 		{

@@ -60,10 +60,12 @@ func executeHook(cfg config.Config, gargs gargs.GiksArgs) error {
 	if !h.Enabled {
 		return fmt.Errorf("hook '%s' is not enabled", h.Name)
 	}
+	log.Debugf("Running hook '%s' with %d steps...", h.Name, len(h.Steps))
 	for i, step := range h.Steps {
 		// ensure that the variables are up-to-date for every step in case they changed
 		// due to previous steps
 		vars := giksVars(cfg, gargs)
+		log.Debugf("Performing step '%s/%d' with variables '%s'", h.Name, i+1, strings.Join(varsToList(vars), ","))
 		if err := executeStep(cfg.WorkingDir, h, step, gargs, vars); err != nil {
 			if errors.IsWarningError(err) {
 				log.Warnf("failed executing step no. %d. Error: %s", i+1, err)
@@ -71,6 +73,7 @@ func executeHook(cfg config.Config, gargs gargs.GiksArgs) error {
 			}
 			return fmt.Errorf("failed executing step no. %d. Error: %s", i+1, err)
 		}
+		log.Debugf("Successfully performed step '%s/%d'", h.Name, i+1)
 	}
 	return nil
 }
@@ -96,6 +99,7 @@ func executeStep(workingDir string, h config.Hook, s config.Step, args []string,
 }
 
 func executeScript(workingDir string, path string, args []string, vars map[string]string) error {
+	log.Debugf("Executing script '%s' in directory '%s'", path, workingDir)
 	stat, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -121,6 +125,7 @@ func executeScript(workingDir string, path string, args []string, vars map[strin
 // TODO: Allow Env variables and commands to be plugin arguments
 // be re-used to avoid copy & paste code within the config file
 func executePlugin(workingDir string, hook string, pCfg config.PluginStep, args []string, vars map[string]string) error {
+	log.Debugf("Executing plugin '%s' in directory '%s'", pCfg.Name, workingDir)
 	p, err := plugins.Get(pCfg.Name)
 	if err != nil {
 		return err
@@ -158,6 +163,7 @@ func executePlugin(workingDir string, hook string, pCfg config.PluginStep, args 
 }
 
 func executeCommand(workingDir string, command string, args []string, vars map[string]string) error {
+	log.Debugf("Executing command '%s' in directory '%s'", command, workingDir)
 	args = append([]string{"-c", command}, args...)
 	cmd := exec.Command("sh", args...)
 	cmd.Dir = workingDir
@@ -169,6 +175,7 @@ func executeCommand(workingDir string, command string, args []string, vars map[s
 }
 
 func runExec(workingDir string, line string, args []string, vars map[string]string) error {
+	log.Debugf("Running executable '%s' in directory '%s'", line, workingDir)
 	if err := os.Chdir(workingDir); err == nil {
 		return fmt.Errorf("could not change into working directory '%s'. Error: %+v", workingDir, err)
 	}

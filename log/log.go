@@ -7,6 +7,13 @@ import (
 
 var logger = logrus.New()
 
+func Init(debug bool) {
+	if debug {
+		logger.SetLevel(logrus.DebugLevel)
+	}
+	logger.Debug("Logging level set to debug.")
+}
+
 // Debug logs a message at level Debug on the standard logger.
 func Debug(args ...interface{}) {
 	logger.Debug(args...)

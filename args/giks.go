@@ -9,7 +9,7 @@ import (
 const (
 	keyGlobalConfigFlag = "--config"
 	keyGlobalGitDirFlag = "--git-dir"
-	keyGlobalDebugFlag = "--debug"
+	keyGlobalDebugFlag  = "--debug"
 )
 
 var globalFlags = []string{keyGlobalGitDirFlag, keyGlobalConfigFlag, keyGlobalDebugFlag}
